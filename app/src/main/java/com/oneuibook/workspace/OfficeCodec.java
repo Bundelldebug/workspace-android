@@ -191,36 +191,13 @@ final class OfficeCodec {
         }
     }
 
-    // ---- HWPX / HWP ----
+    // ---- HWPX / HWP (Rich HwpRich engine: images, merged tables, fills, boxes, styles) ----
     static String importHwpx(byte[] zipBytes) throws Exception {
-        byte[] sec = readZipEntry(zipBytes, "Contents/section0.xml");
-        if (sec == null) return "<p>(HWPX 본문을 찾지 못했습니다)</p>";
-        Document doc = parseXml(sec);
-        NodeList ps = doc.getElementsByTagNameNS("*", "p");
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < ps.getLength(); i++) {
-            String t = ps.item(i).getTextContent().trim();
-            if (!t.isEmpty()) sb.append("<p>").append(escHtml(t)).append("</p>");
-        }
-        return sb.length() > 0 ? sb.toString() : "<p><br></p>";
+        return HwpRich.renderHwpxBytes(zipBytes);
     }
 
     static String importHwpBinary(byte[] raw) {
-        StringBuilder out = new StringBuilder(), run = new StringBuilder();
-        for (int i = 0; i + 1 < raw.length; i += 2) {
-            char ch = (char) ((raw[i] & 0xFF) | ((raw[i + 1] & 0xFF) << 8));
-            boolean ok = (ch >= 0xAC00 && ch <= 0xD7A3) || (ch >= 0x20 && ch <= 0x7E) || ch == '\n' || ch == '\r' || ch == '\t';
-            if (ok) run.append(ch);
-            else { if (run.length() >= 8) out.append(run).append('\n'); run.setLength(0); }
-        }
-        if (run.length() >= 8) out.append(run);
-        if (out.length() == 0) return "<p>(HWP 바이너리 텍스트 추출 실패 — HWPX 또는 DOCX를 권장합니다)</p>";
-        StringBuilder html = new StringBuilder();
-        for (String line : out.toString().split("\r?\n")) {
-            String t = line.trim();
-            if (!t.isEmpty()) html.append("<p>").append(escHtml(t)).append("</p>");
-        }
-        return html.toString();
+        return HwpRich.renderHwpBytes(raw);
     }
 
     // ---- XLSX / CSV (editors.js GraphsEditor schema: sheets:[{name, cells:{A1:{v}}}] ) ----

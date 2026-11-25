@@ -1,13 +1,14 @@
-/* Prism-style One UI 9.5 Liquid Glass UI + Phone/Tablet Usability & Zero-Overlap Overhaul */
+/* Kyant0 + MeiloX Optical Glass UI + Rich HWP/HWPX Document Styling */
 :root {
  --sat: 0px;
  --sab: 0px;
  --prism-bg: #f2f4f8;
  --prism-card: #ffffff;
- --prism-glass: rgba(252, 253, 255, 0.78);
- --prism-glass-strong: rgba(252, 253, 255, 0.90);
- --prism-stroke: rgba(15, 23, 42, 0.08);
- --prism-hi: rgba(255, 255, 255, 0.88);
+ --prism-glass: rgba(252, 253, 255, 0.72);
+ --prism-glass-strong: rgba(252, 253, 255, 0.84);
+ --prism-stroke: rgba(15, 23, 42, 0.09);
+ --prism-hi: rgba(255, 255, 255, 0.92);
+ --prism-rim-45: linear-gradient(135deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.12) 48%, rgba(160,205,255,0.22) 78%, rgba(255,255,255,0.58) 100%);
  --prism-accent: #387aff;
  --prism-accent-soft: rgba(56, 122, 255, 0.14);
  --prism-text: #111318;
@@ -19,10 +20,11 @@
  :root {
   --prism-bg: #0e1015;
   --prism-card: #1b1e26;
-  --prism-glass: rgba(28, 32, 42, 0.80);
-  --prism-glass-strong: rgba(28, 32, 42, 0.92);
-  --prism-stroke: rgba(255, 255, 255, 0.12);
-  --prism-hi: rgba(255, 255, 255, 0.14);
+  --prism-glass: rgba(26, 30, 40, 0.72);
+  --prism-glass-strong: rgba(26, 30, 40, 0.86);
+  --prism-stroke: rgba(255, 255, 255, 0.14);
+  --prism-hi: rgba(255, 255, 255, 0.22);
+  --prism-rim-45: linear-gradient(135deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.04) 48%, rgba(110,175,255,0.16) 78%, rgba(255,255,255,0.24) 100%);
   --prism-text: #f4f6fa;
   --prism-text2: #9ea6b6;
  }
@@ -39,18 +41,54 @@ body {
 .window-controls { display: none !important; }
 #titlebar { -webkit-app-region: no-drag; }
 
-/* Disable rectangular SVG displacement filters on Android WebView; use clean Prism frosted glass */
 .lg-layer, svg[id^="pg-"], svg[id^="lg-"] { display: none !important; }
 
 .pg-surface, .oneui-pill, #toast, #about-dialog, #find-bar, .quick-actions, .rail, #tabs {
- backdrop-filter: blur(24px) saturate(175%) !important;
- -webkit-backdrop-filter: blur(24px) saturate(175%) !important;
+ position: relative;
+ backdrop-filter: blur(26px) saturate(195%) contrast(1.04) !important;
+ -webkit-backdrop-filter: blur(26px) saturate(195%) contrast(1.04) !important;
  background: var(--prism-glass) !important;
  border: 1px solid var(--prism-stroke) !important;
- box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--prism-hi) !important;
+ box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10), inset 0 1px 0 var(--prism-hi), inset 0 -1px 6px rgba(0, 0, 0, 0.05), inset 1px 0 0 rgba(255, 255, 255, 0.35) !important;
  overflow: hidden !important;
  isolation: isolate;
 }
+.pg-surface::after, #start-nav::after, .topbar::after, #inspector::after {
+ content: "";
+ position: absolute;
+ inset: 0;
+ border-radius: inherit;
+ padding: 1px;
+ background: var(--prism-rim-45);
+ -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+ -webkit-mask-composite: xor;
+ mask-composite: exclude;
+ pointer-events: none;
+ opacity: 0.85;
+}
+.km-lens-glow {
+ position: relative;
+}
+.km-lens-glow::before {
+ content: "";
+ position: absolute;
+ inset: 0;
+ border-radius: inherit;
+ background: radial-gradient(120px circle at var(--px, 50%) var(--py, 50%), rgba(255,255,255,0.34), transparent 72%);
+ opacity: var(--pa, 0);
+ transition: opacity 0.22s var(--prism-spring);
+ pointer-events: none;
+}
+
+/* Rich HWP / HWPX document styling inside editor page */
+.typing-page .hwp-doc { color: inherit; line-height: 1.6; }
+.typing-page .hwp-doc p { margin: 0 0 6px; }
+.typing-page .hwp-tbl { width: 100%; border-collapse: collapse; margin: 10px 0; table-layout: auto; }
+.typing-page .hwp-tbl td, .typing-page .hwp-tbl th { padding: 6px 8px; vertical-align: top; word-break: break-word; }
+.typing-page .hwp-box { padding: 10px 12px; margin: 8px 0; border-radius: 6px; }
+.typing-page .hwp-hf { padding: 6px 10px; margin: 4px 0 8px; border-bottom: 1px solid #d5dce6; background: rgba(148,163,184,0.10); font-size: 0.9em; color: #475569; }
+.typing-page hr.pb { border: 0; border-top: 1px dashed #cbd5e1; margin: 16px 0; }
+.typing-page img { max-width: 100%; height: auto; border-radius: 4px; }
 
 /* Prism spring animations & touch recoil */
 button, .app-card, .template-card, .recent-item {

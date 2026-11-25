@@ -51,5 +51,24 @@
    const insp = document.getElementById('inspector');
    if (insp) insp.hidden = true;
   }
+  // Kyant0 + MeiloX interactive optical glass touch bloom on pills & glass surfaces
+  const bindGlow = (el) => {
+   if (!el || el.__kmGlow) return;
+   el.__kmGlow = true;
+   el.classList.add('km-lens-glow');
+   const setPt = (ev) => {
+    const r = el.getBoundingClientRect();
+    const p = ev.touches && ev.touches[0] ? ev.touches[0] : ev;
+    el.style.setProperty('--px', (p.clientX - r.left) + 'px');
+    el.style.setProperty('--py', (p.clientY - r.top) + 'px');
+    el.style.setProperty('--pa', '1');
+   };
+   const clearPt = () => el.style.setProperty('--pa', '0');
+   el.addEventListener('pointerdown', setPt, { passive: true });
+   el.addEventListener('pointermove', (e) => { if (e.buttons) setPt(e); }, { passive: true });
+   el.addEventListener('pointerup', clearPt, { passive: true });
+   el.addEventListener('pointercancel', clearPt, { passive: true });
+  };
+  document.querySelectorAll('#start-nav, .topbar, #ribbon, #inspector, #find-bar').forEach(bindGlow);
  });
 })();

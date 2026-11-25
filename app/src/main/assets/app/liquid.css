@@ -1,0 +1,98 @@
+/* One UI Book — Stable Apple-inspired Liquid Glass (GPU backdrop-filter + specular rim)
+ * Zero SVG backdrop-filter distortion leaks, crisp text legibility, 60fps native compositing. */
+:root {
+  --lg-ease: cubic-bezier(.22, 1, .36, 1);
+  --lg-spring: cubic-bezier(.28, 1.18, .44, 1);
+  --lg-alpha: .78;
+  --lg-blur: 24px;
+}
+
+/* Primary Liquid Glass surface (Light mode) */
+.lg-on .lg-glass {
+  background: linear-gradient(165deg, rgba(255, 255, 255, .86) 0%, rgba(246, 248, 252, .72) 100%) !important;
+  backdrop-filter: blur(var(--lg-blur)) saturate(185%) brightness(1.03) !important;
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(185%) brightness(1.03) !important;
+  border: 1px solid rgba(255, 255, 255, .78) !important;
+  box-shadow:
+    0 10px 30px rgba(15, 23, 42, .10),
+    0 2px 6px rgba(15, 23, 42, .05),
+    inset 0 1px 0.5px rgba(255, 255, 255, .95),
+    inset 0 -1px 0 rgba(15, 23, 42, .05) !important;
+}
+
+/* Dark mode Liquid Glass */
+[data-theme=dark] .lg-on .lg-glass,
+.dark .lg-on .lg-glass,
+body.dark-theme .lg-on .lg-glass,
+html[data-theme="dark"] .lg-glass {
+  background: linear-gradient(165deg, rgba(44, 47, 58, .82) 0%, rgba(28, 30, 38, .74) 100%) !important;
+  backdrop-filter: blur(var(--lg-blur)) saturate(170%) brightness(.96) !important;
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(170%) brightness(.96) !important;
+  border: 1px solid rgba(255, 255, 255, .14) !important;
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, .42),
+    0 2px 8px rgba(0, 0, 0, .24),
+    inset 0 1px 0.5px rgba(255, 255, 255, .20),
+    inset 0 -1px 0 rgba(0, 0, 0, .35) !important;
+}
+
+/* Menus & popovers get higher opacity so text is always razor sharp */
+.lg-on .menu.lg-glass,
+.lg-on .oneui-popover-menu.lg-glass,
+.lg-on .sheet.lg-glass {
+  background: linear-gradient(165deg, rgba(255, 255, 255, .92) 0%, rgba(248, 250, 253, .86) 100%) !important;
+}
+html[data-theme="dark"] .menu.lg-glass,
+html[data-theme="dark"] .oneui-popover-menu.lg-glass,
+html[data-theme="dark"] .sheet.lg-glass,
+body.dark-theme .menu.lg-glass,
+body.dark-theme .oneui-popover-menu.lg-glass {
+  background: linear-gradient(165deg, rgba(42, 45, 56, .92) 0%, rgba(30, 32, 40, .88) 100%) !important;
+}
+
+/* Keep-color glass (e.g. mini player with album tint) */
+.lg-on .lg-keep {
+  backdrop-filter: blur(26px) saturate(185%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(185%) !important;
+  border: 1px solid rgba(255, 255, 255, .32) !important;
+  box-shadow:
+    0 12px 34px rgba(15, 23, 42, .16),
+    inset 0 1px 0.5px rgba(255, 255, 255, .55) !important;
+}
+
+/* Selection pill lens inside nav bars */
+.lg-lens {
+  pointer-events: none;
+  transition: top .34s var(--lg-spring), left .34s var(--lg-spring), width .34s var(--lg-spring), height .34s var(--lg-spring), opacity .18s !important;
+  background: rgba(255, 255, 255, .92) !important;
+  box-shadow:
+    0 3px 12px rgba(15, 23, 42, .08),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+html[data-theme="dark"] .lg-lens,
+body.dark-theme .lg-lens,
+.dark .lg-lens {
+  background: rgba(255, 255, 255, .14) !important;
+  box-shadow:
+    0 3px 12px rgba(0, 0, 0, .28),
+    inset 0 1px 0 rgba(255, 255, 255, .18) !important;
+}
+
+/* Smooth menu / popover entrance without DOM cloning glitches */
+.lg-pop-in {
+  animation: lgPopInSoft .22s var(--lg-ease) both;
+}
+@keyframes lgPopInSoft {
+  from { opacity: 0; transform: translateY(-6px) scale(.96); }
+  to { opacity: 1; transform: none; }
+}
+
+.lg-on .page-in { animation: lgPageIn .24s var(--lg-ease); }
+@keyframes lgPageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-lens, .lg-glass, .lg-pop-in, .lg-on .page-in { transition: none !important; animation: none !important; }
+}

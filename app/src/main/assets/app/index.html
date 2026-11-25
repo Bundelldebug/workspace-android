@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>워크스페이스</title>
+ <link rel="stylesheet" href="app.css">
+ <link rel="stylesheet" href="pill.css">
+ <link rel="stylesheet" href="liquid.css">
+ <link rel="stylesheet" href="android-mobile.css">
+ <script src="android-bridge.js"></script>
+</head>
+<body class="booting">
+ <header id="titlebar">
+  <div class="identity">
+   <img id="app-icon" alt="">
+   <span id="app-name"></span>
+  </div>
+  <div id="document-title"></div>
+  <span id="save-state"></span>
+  <div class="window-controls">
+   <button data-host="minimize" aria-label="최소화">
+    <svg viewBox="0 0 12 12" width="12" height="12"><path d="M2 6h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+   </button>
+   <button data-host="maximize" aria-label="최대화">
+    <svg viewBox="0 0 12 12" width="12" height="12"><rect x="2.2" y="2.2" width="7.6" height="7.6" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+   </button>
+   <button data-host="closeWindow" aria-label="닫기">
+    <svg viewBox="0 0 12 12" width="12" height="12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+   </button>
+  </div>
+ </header>
+
+ <section id="start">
+  <aside class="start-sidebar">
+   <div class="start-brand">
+    <img id="brand-icon" alt="">
+    <h1 id="brand-name"></h1>
+    <span id="brand-desc"></span>
+   </div>
+   <nav id="start-nav">
+    <button class="selected" data-start="new">새로 만들기</button>
+    <button data-start="recent">최근 문서</button>
+    <button data-start="open">문서 열기</button>
+   </nav>
+   <button class="about" id="about">앱 정보</button>
+  </aside>
+  <main id="start-content"></main>
+ </section>
+
+ <section id="editor" hidden>
+  <div class="topbar">
+   <div class="quick-actions">
+    <button data-action="home" title="시작 화면으로">
+     <svg viewBox="0 0 20 20" width="18" height="18"><path d="M12.5 4.5L7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button data-action="save" title="저장 (Ctrl+S)"><img src="assets/cmd/save.svg" alt=""></button>
+    <button data-action="undo" title="실행 취소 (Ctrl+Z)"><img src="assets/cmd/undo.svg" alt=""></button>
+    <button data-action="redo" title="다시 실행 (Ctrl+Y)"><img src="assets/cmd/redo.svg" alt=""></button>
+   </div>
+   <div id="tabs" role="tablist"></div>
+   <button id="toggle-ai" title="NPU AI 도우미">✦ AI</button>
+   <button id="toggle-inspector" title="서식 패널">서식</button>
+  </div>
+  <div id="ribbon"></div>
+  <div id="formula-bar" hidden>
+   <input id="cell-address" aria-label="선택한 셀" readonly>
+   <b>ƒx</b>
+   <input id="cell-formula" aria-label="수식 입력" placeholder="값 또는 수식 (=SUM(A1:A5)) 입력 후 Enter">
+  </div>
+  <div class="workarea">
+   <nav class="rail" aria-label="빠른 작업">
+    <button data-action="new" title="새 문서"><img src="assets/cmd/newdoc.svg" alt="새 문서"></button>
+    <button data-action="open" title="열기"><img src="assets/cmd/open.svg" alt="열기"></button>
+    <button data-action="save" title="저장"><img src="assets/cmd/save.svg" alt="저장"></button>
+    <div class="rail-divider"></div>
+    <button data-action="pdf" title="PDF 내보내기"><img src="assets/cmd/exportdirecttopdf.svg" alt="PDF"></button>
+    <button data-action="print" title="인쇄"><img src="assets/cmd/print.svg" alt="인쇄"></button>
+    <button data-action="find" title="찾기 및 바꾸기"><img src="assets/cmd/searchdialog.svg" alt="찾기"></button>
+   </nav>
+   <div id="viewport" aria-label="문서 편집 영역"></div>
+   <aside id="inspector"></aside>
+  </div>
+  <footer>
+   <span id="document-stats"></span>
+   <span id="recovery-state"></span>
+   <label class="zoom">
+    <span>확대</span>
+    <input type="range" id="zoom" min="50" max="200" step="10" value="100">
+    <output id="zoom-label">100%</output>
+   </label>
+  </footer>
+ </section>
+
+ <div id="find-bar" hidden>
+  <input id="find-input" placeholder="찾을 내용">
+  <input id="replace-input" placeholder="바꿀 내용">
+  <button id="find-next">찾기</button>
+  <button id="replace-all">모두 바꾸기</button>
+  <button id="find-close" aria-label="닫기">×</button>
+ </div>
+
+ <div id="slideshow" hidden>
+  <div id="slideshow-stage"></div>
+  <div id="slideshow-hud">
+   <span id="slideshow-counter">1 / 1</span>
+   <button id="slideshow-prev">이전</button>
+   <button id="slideshow-next">다음</button>
+   <button id="slideshow-exit">종료 (ESC)</button>
+  </div>
+ </div>
+
+ <div id="toast" role="status"></div>
+ <dialog id="about-dialog">
+  <img id="about-icon" alt="">
+  <h2 id="about-name"></h2>
+  <p class="ver">9.5.1</p>
+  <p>문서 · 스프레드시트 · 프레젠테이션</p>
+  <p class="small">DOCX · XLSX · PPTX · ODF · HWP · HWPX · CSV · PDF</p>
+  <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+   <button data-host="checkUpdate">업데이트 확인</button>
+   <button id="close-about">확인</button>
+  </div>
+ </dialog>
+
+ <script src="editors.js"></script>
+ <script src="app.js"></script>
+ <script>
+  window.PILL_NAV = [
+   { box: "#start-nav", item: "button", active: "selected", vertical: true },
+   { box: "#tabs", item: ".tab", active: "active" },
+   { box: ".quick-actions" },
+   { box: ".rail" }
+  ];
+  window.LIQUID = { glass: ["#toast", "#about-dialog"], morph: ["#about-dialog"] };
+ </script>
+ <script src="pill.js"></script>
+ <script src="liquid.js"></script>
+</body>
+</html>

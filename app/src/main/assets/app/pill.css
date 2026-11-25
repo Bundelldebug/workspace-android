@@ -1,0 +1,11 @@
+/* One UI 9.5 floating pill (shared with the Clock / Calculator / Memory apps) */
+.oneui-pill{position:relative;display:inline-flex;align-items:center;gap:4px;padding:5px;border-radius:40px;
+ background:color-mix(in srgb,var(--pill-surface,#ffffff) 92%,transparent);border:1px solid var(--pill-line,rgba(0,0,0,.08));
+ box-shadow:0 6px 22px rgba(0,0,0,.09);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.oneui-pill.vertical{flex-direction:column;align-items:stretch}
+.oneui-pill>*{position:relative;z-index:1}
+.oneui-pill>.pill-ind{position:absolute;z-index:0;border-radius:30px;background:var(--pill-ind,rgba(17,18,22,.075));pointer-events:none;opacity:0}
+.oneui-pill>button,.oneui-pill>a,.oneui-pill>[role=tab]{border-radius:30px!important;transition:transform .22s cubic-bezier(.34,1.32,.5,1),color .18s,background-color .18s}
+.oneui-pill>button:active{transform:scale(.93)}
+[data-theme=dark] .oneui-pill,body.dark-theme .oneui-pill,:root[data-theme=dark] .oneui-pill{--pill-surface:#26262d;--pill-line:rgba(255,255,255,.08);--pill-ind:rgba(255,255,255,.12);box-shadow:0 6px 22px rgba(0,0,0,.35)}
+@media (prefers-reduced-motion:reduce){.oneui-pill>*{transition:none!important}}

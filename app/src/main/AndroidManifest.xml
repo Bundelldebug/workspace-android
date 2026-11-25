@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.oneuibook.workspace"
+    android:versionCode="4"
+    android:versionName="9.5.1">
+
+    <uses-sdk android:minSdkVersion="31" android:targetSdkVersion="35" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:theme="@style/AppTheme"
+        android:hardwareAccelerated="true"
+        android:supportsRtl="true"
+        android:allowBackup="true"
+        android:resizeableActivity="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden|keyboard"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Default handler for Hangul, Word, Excel, PowerPoint, ODF, CSV, TXT -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/haansofthwp" />
+                <data android:mimeType="application/x-hwp" />
+                <data android:mimeType="application/vnd.hancom.hwp" />
+                <data android:mimeType="application/vnd.hancom.hwpx" />
+                <data android:mimeType="application/hwp+zip" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="application/vnd.oasis.opendocument.text" />
+                <data android:mimeType="application/vnd.oasis.opendocument.spreadsheet" />
+                <data android:mimeType="application/vnd.oasis.opendocument.presentation" />
+                <data android:mimeType="application/rtf" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.hwp" />
+                <data android:pathPattern=".*\\.hwpx" />
+                <data android:pathPattern=".*\\.doc" />
+                <data android:pathPattern=".*\\.docx" />
+                <data android:pathPattern=".*\\.xls" />
+                <data android:pathPattern=".*\\.xlsx" />
+                <data android:pathPattern=".*\\.ppt" />
+                <data android:pathPattern=".*\\.pptx" />
+                <data android:pathPattern=".*\\.odt" />
+                <data android:pathPattern=".*\\.ods" />
+                <data android:pathPattern=".*\\.odp" />
+                <data android:pathPattern=".*\\.csv" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

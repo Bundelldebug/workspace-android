@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">워크스페이스</string>
+    <string name="tab_home">홈</string>
+    <string name="tab_files">문서함</string>
+    <string name="tab_templates">템플릿</string>
+    <string name="tab_settings">설정</string>
+    <string name="search">검색</string>
+    <string name="search_hint">문서·시트·슬라이드 검색</string>
+    <string name="cancel">취소</string>
+    <string name="save">저장</string>
+    <string name="accent_blue">블루</string>
+    <string name="accent_red">레드</string>
+    <string name="accent_violet">바이올렛</string>
+    <string name="accent_teal">틸</string>
+    <string name="accent_green">그린</string>
+    <string name="accent_orange">오렌지</string>
+    <string name="accent_pink">핑크</string>
+    <string name="accent_dynamic">배경화면 색상</string>
+</resources>

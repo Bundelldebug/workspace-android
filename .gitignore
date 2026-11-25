@@ -1,0 +1,20 @@
+# signing key and build outputs: never publish
+*.jks
+*.keystore
+*.apk
+*.idsig
+dist/
+
+# local toolchain location
+toolchain.path
+
+# generated test screenshots / caches
+tests/ui/output/
+tests/ui/.cache/
+
+# local recordings / media / notes
+*.mp4
+*.mov
+*.mkv
+*.webm
+*Readme.txt

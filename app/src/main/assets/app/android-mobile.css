@@ -1,0 +1,188 @@
+/* Fix rectangular SVG backdrop-filter blur artifact on Android WebView + smooth spring animations */
+.pg-surface, .oneui-pill, #toast, #about-dialog, #find-bar, .quick-actions, .rail, #tabs {
+ backdrop-filter: blur(22px) saturate(165%) !important;
+ -webkit-backdrop-filter: blur(22px) saturate(165%) !important;
+ background: rgba(250, 250, 252, 0.78) !important;
+ border: 1px solid rgba(255, 255, 255, 0.65) !important;
+ box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+ overflow: hidden !important;
+ isolation: isolate;
+}
+.lg-layer, svg[id^="pg-"], svg[id^="lg-"] { display: none !important; }
+#toast { border-radius: 999px !important; transition: opacity .24s ease, transform .3s cubic-bezier(.22,1,.36,1) !important; }
+#about-dialog { border-radius: 26px !important; animation: wsGlassPop .32s cubic-bezier(.22,1,.36,1); }
+#find-bar { border-radius: 20px !important; animation: wsGlassPop .26s cubic-bezier(.22,1,.36,1); }
+button { transition: transform .16s cubic-bezier(.22,1,.36,1), background .18s ease, opacity .18s ease; }
+button:active { transform: scale(0.95); }
+@keyframes wsGlassPop {
+ from { opacity: 0; transform: scale(0.9) translateY(10px); }
+ to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes wsSheetUp {
+ from { opacity: 0; transform: translateY(24px); }
+ to { opacity: 1; transform: translateY(0); }
+}
+
+/* Android WebView adaptation:
+   - Unfolded foldables & tablets (>=640px): full PC Workspace UI with safe-area insets & zero overlap
+   - Phones (<640px): One UI 9.5 Liquid Glass mobile UI with floating bottom glass nav pill & bottom-sheet inspector */
+:root { --sat: 0px; --sab: 0px; }
+body { padding-top: var(--sat); padding-bottom: var(--sab); }
+.window-controls { display: none !important; }
+#titlebar { -webkit-app-region: no-drag; }
+#ribbon, #tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+#ribbon::-webkit-scrollbar, #tabs::-webkit-scrollbar { display: none; }
+
+/* Tablet / foldable narrow width overlap protection (640px ~ 980px) */
+@media (min-width: 640px) and (max-width: 980px) {
+ .start-sidebar { width: 220px !important; min-width: 200px !important; }
+ #inspector { width: 230px !important; }
+ .app-cards { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 12px !important; }
+}
+
+/* One UI 9.5 Glass Phone UI (<640px) */
+@media (max-width: 639px) {
+ #titlebar {
+  height: 44px !important;
+  padding: 0 14px !important;
+  background: rgba(250, 250, 252, 0.78) !important;
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+ }
+ #start {
+  flex-direction: column !important;
+  overflow-y: auto !important;
+  padding-bottom: calc(var(--sab) + 92px) !important;
+ }
+ .start-sidebar {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 18px 20px 6px !important;
+  background: transparent !important;
+  border-right: 0 !important;
+ }
+ .start-brand {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 0 !important;
+ }
+ .start-brand img { width: 42px !important; height: 42px !important; border-radius: 12px; }
+ .start-brand h1 { font-size: 26px !important; font-weight: 800 !important; letter-spacing: -0.02em; margin: 0 !important; }
+ .start-brand span, .start-sidebar .about { display: none !important; }
+
+ /* Floating bottom One UI Glass Navigation Pill on Start Screen */
+ #start-nav {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: calc(var(--sab) + 14px) !important;
+  transform: translateX(-50%) !important;
+  z-index: 60 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 6px !important;
+  width: auto !important;
+  max-width: calc(100vw - 28px) !important;
+  border-radius: 999px !important;
+  background: rgba(250, 250, 252, 0.82) !important;
+  backdrop-filter: blur(24px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(170%) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+ }
+ #start-nav button {
+  padding: 10px 14px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  transition: transform 0.16s ease, background 0.2s ease !important;
+ }
+ #start-nav button:active { transform: scale(0.95); }
+ #start-nav button.selected {
+  background: rgba(66, 122, 210, 0.14) !important;
+  color: var(--accent, #427ad2) !important;
+ }
+
+ #start-content {
+  padding: 10px 16px 24px !important;
+ }
+ #start-content h2 { font-size: 20px !important; margin-bottom: 4px !important; }
+ .app-cards, .template-grid {
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+ }
+ .app-card {
+  flex-direction: row !important;
+  align-items: center !important;
+  text-align: left !important;
+  padding: 16px !important;
+  border-radius: 22px !important;
+  gap: 14px !important;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1) !important;
+ }
+ .app-card:active { transform: scale(0.97); }
+ .app-card img { width: 46px !important; height: 46px !important; margin: 0 !important; flex: none; }
+
+ /* Phone Editor: frosted glass topbar + compact scrollable ribbon + glass bottom-sheet inspector */
+ .topbar {
+  padding: 6px 10px !important;
+  gap: 6px !important;
+  background: rgba(250, 250, 252, 0.84) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+ }
+ .quick-actions button, #toggle-inspector, #toggle-ai {
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 999px !important;
+ }
+ #ribbon {
+  padding: 6px 10px !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+ }
+ .ribbon-group { flex: none !important; }
+ .workarea .rail { display: none !important; }
+ .typing-page {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 22px 18px !important;
+  margin: 10px 8px 60px !important;
+  border-radius: 18px !important;
+ }
+ .present-wrap { flex-direction: column-reverse !important; }
+ .slide-list {
+  width: 100% !important;
+  height: 92px !important;
+  flex-direction: row !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  border-right: 0 !important;
+  border-top: 1px solid rgba(0,0,0,.08) !important;
+ }
+ /* Bottom glass sheet inspector on phone */
+ #inspector {
+  position: fixed !important;
+  left: 10px !important;
+  right: 10px !important;
+  top: auto !important;
+  bottom: calc(var(--sab) + 10px) !important;
+  width: auto !important;
+  max-height: 58vh !important;
+  z-index: 70 !important;
+  border-radius: 26px !important;
+  background: rgba(250, 250, 252, 0.9) !important;
+  backdrop-filter: blur(26px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(170%) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2) !important;
+  padding: 16px !important;
+ }
+ footer .zoom { display: none !important; }
+}

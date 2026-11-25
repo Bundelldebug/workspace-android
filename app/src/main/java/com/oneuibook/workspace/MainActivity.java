@@ -31,7 +31,7 @@ import java.io.OutputStream;
  * 아이콘·UI·리본·서식 패널·편집기(타이핑/그래프즈/프레젠트)를 WebView + AndroidHost 브리지로 그대로 이식.
  */
 public final class MainActivity extends Activity {
-    static final String VERSION = "9.5.1";
+    static final String VERSION = "9.5.2";
     private static final int REQ_OPEN = 5001, REQ_SAVE_AS = 5002, REQ_IMAGE = 5003;
 
     WebView web;

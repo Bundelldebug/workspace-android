@@ -101,7 +101,7 @@ public class WorkspaceUiTest {
         ActivityController<MainActivity> ctrl = Robolectric.buildActivity(MainActivity.class).setup();
         MainActivity act = ctrl.get();
         assertEquals("워크스페이스", act.getString(R.string.app_name));
-        assertEquals("9.5.1", MainActivity.VERSION);
+        assertEquals("9.5.2", MainActivity.VERSION);
         assertNotNull(act.web);
         // Verify PC Workspace assets are packaged in APK
         assertNotNull(act.getAssets().open("app/index.html"));

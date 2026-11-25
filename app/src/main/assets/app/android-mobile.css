@@ -1,77 +1,165 @@
-/* Fix rectangular SVG backdrop-filter blur artifact on Android WebView + smooth spring animations */
+/* Prism-style One UI 9.5 Liquid Glass UI + Phone/Tablet Usability & Zero-Overlap Overhaul */
+:root {
+ --sat: 0px;
+ --sab: 0px;
+ --prism-bg: #f2f4f8;
+ --prism-card: #ffffff;
+ --prism-glass: rgba(252, 253, 255, 0.78);
+ --prism-glass-strong: rgba(252, 253, 255, 0.90);
+ --prism-stroke: rgba(15, 23, 42, 0.08);
+ --prism-hi: rgba(255, 255, 255, 0.88);
+ --prism-accent: #387aff;
+ --prism-accent-soft: rgba(56, 122, 255, 0.14);
+ --prism-text: #111318;
+ --prism-text2: #6b7280;
+ --prism-spring: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+ :root {
+  --prism-bg: #0e1015;
+  --prism-card: #1b1e26;
+  --prism-glass: rgba(28, 32, 42, 0.80);
+  --prism-glass-strong: rgba(28, 32, 42, 0.92);
+  --prism-stroke: rgba(255, 255, 255, 0.12);
+  --prism-hi: rgba(255, 255, 255, 0.14);
+  --prism-text: #f4f6fa;
+  --prism-text2: #9ea6b6;
+ }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+ padding-top: var(--sat);
+ padding-bottom: var(--sab);
+ background: var(--prism-bg) !important;
+ color: var(--prism-text);
+ overflow-x: hidden;
+}
+.window-controls { display: none !important; }
+#titlebar { -webkit-app-region: no-drag; }
+
+/* Disable rectangular SVG displacement filters on Android WebView; use clean Prism frosted glass */
+.lg-layer, svg[id^="pg-"], svg[id^="lg-"] { display: none !important; }
+
 .pg-surface, .oneui-pill, #toast, #about-dialog, #find-bar, .quick-actions, .rail, #tabs {
- backdrop-filter: blur(22px) saturate(165%) !important;
- -webkit-backdrop-filter: blur(22px) saturate(165%) !important;
- background: rgba(250, 250, 252, 0.78) !important;
- border: 1px solid rgba(255, 255, 255, 0.65) !important;
- box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+ backdrop-filter: blur(24px) saturate(175%) !important;
+ -webkit-backdrop-filter: blur(24px) saturate(175%) !important;
+ background: var(--prism-glass) !important;
+ border: 1px solid var(--prism-stroke) !important;
+ box-shadow: 0 8px 26px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--prism-hi) !important;
  overflow: hidden !important;
  isolation: isolate;
 }
-.lg-layer, svg[id^="pg-"], svg[id^="lg-"] { display: none !important; }
-#toast { border-radius: 999px !important; transition: opacity .24s ease, transform .3s cubic-bezier(.22,1,.36,1) !important; }
-#about-dialog { border-radius: 26px !important; animation: wsGlassPop .32s cubic-bezier(.22,1,.36,1); }
-#find-bar { border-radius: 20px !important; animation: wsGlassPop .26s cubic-bezier(.22,1,.36,1); }
-button { transition: transform .16s cubic-bezier(.22,1,.36,1), background .18s ease, opacity .18s ease; }
-button:active { transform: scale(0.95); }
+
+/* Prism spring animations & touch recoil */
+button, .app-card, .template-card, .recent-item {
+ transition: transform 0.18s var(--prism-spring), background 0.2s ease, opacity 0.18s ease, box-shadow 0.2s ease !important;
+}
+button:active, .app-card:active, .template-card:active { transform: scale(0.95) !important; }
+
+#toast {
+ border-radius: 999px !important;
+ padding: 10px 18px !important;
+ font-weight: 600 !important;
+}
+#about-dialog {
+ border-radius: 28px !important;
+ animation: wsGlassPop 0.30s var(--prism-spring);
+}
+#find-bar {
+ border-radius: 22px !important;
+ animation: wsGlassPop 0.24s var(--prism-spring);
+}
 @keyframes wsGlassPop {
- from { opacity: 0; transform: scale(0.9) translateY(10px); }
+ from { opacity: 0; transform: scale(0.92) translateY(10px); }
  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 @keyframes wsSheetUp {
- from { opacity: 0; transform: translateY(24px); }
+ from { opacity: 0; transform: translateY(28px); }
  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Android WebView adaptation:
-   - Unfolded foldables & tablets (>=640px): full PC Workspace UI with safe-area insets & zero overlap
-   - Phones (<640px): One UI 9.5 Liquid Glass mobile UI with floating bottom glass nav pill & bottom-sheet inspector */
-:root { --sat: 0px; --sab: 0px; }
-body { padding-top: var(--sat); padding-bottom: var(--sab); }
-.window-controls { display: none !important; }
-#titlebar { -webkit-app-region: no-drag; }
-#ribbon, #tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+/* Smooth horizontal scrolling for ribbon & tabs without scrollbar clutter */
+#ribbon, #tabs {
+ overflow-x: auto !important;
+ overflow-y: hidden !important;
+ -webkit-overflow-scrolling: touch;
+ scrollbar-width: none;
+}
 #ribbon::-webkit-scrollbar, #tabs::-webkit-scrollbar { display: none; }
 
-/* Tablet / foldable narrow width overlap protection (640px ~ 980px) */
+/* Zero-overlap protection for all widths */
+.topbar { min-width: 0; flex-wrap: nowrap; }
+#tabs { min-width: 0; flex: 1 1 auto; }
+.ribbon-group { flex: 0 0 auto !important; white-space: nowrap; }
+
+/* Tablet / foldable narrow width protection (640px ~ 980px) */
 @media (min-width: 640px) and (max-width: 980px) {
- .start-sidebar { width: 220px !important; min-width: 200px !important; }
- #inspector { width: 230px !important; }
+ .start-sidebar { width: 216px !important; min-width: 196px !important; }
+ #inspector { width: 236px !important; }
  .app-cards { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 12px !important; }
+ .topbar { gap: 6px !important; padding: 6px 10px !important; }
 }
 
-/* One UI 9.5 Glass Phone UI (<640px) */
+/* =====================================================================
+   Prism-style One UI 9.5 Phone UI (<640px)
+   Compact, spacious document area, zero wasted bars, thumb-friendly pills
+   ===================================================================== */
 @media (max-width: 639px) {
+ /* Start screen: hide redundant desktop titlebar, show Prism large title */
  #titlebar {
-  height: 44px !important;
+  height: 36px !important;
   padding: 0 14px !important;
-  background: rgba(250, 250, 252, 0.78) !important;
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  background: transparent !important;
+  border-bottom: 0 !important;
+  font-size: 12.5px !important;
  }
+ body:has(#editor:not([hidden])) #titlebar { display: none !important; }
+
  #start {
   flex-direction: column !important;
   overflow-y: auto !important;
   padding-bottom: calc(var(--sab) + 92px) !important;
+  background: var(--prism-bg) !important;
  }
  .start-sidebar {
   width: 100% !important;
   min-width: 0 !important;
-  padding: 18px 20px 6px !important;
+  padding: 10px 18px 4px !important;
   background: transparent !important;
   border-right: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
  }
  .start-brand {
   flex-direction: row !important;
   align-items: center !important;
-  gap: 12px !important;
+  gap: 10px !important;
   margin-bottom: 0 !important;
  }
- .start-brand img { width: 42px !important; height: 42px !important; border-radius: 12px; }
- .start-brand h1 { font-size: 26px !important; font-weight: 800 !important; letter-spacing: -0.02em; margin: 0 !important; }
- .start-brand span, .start-sidebar .about { display: none !important; }
+ .start-brand img { width: 38px !important; height: 38px !important; border-radius: 11px; }
+ .start-brand h1 {
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em;
+  margin: 0 !important;
+ }
+ .start-brand span { display: none !important; }
+ .start-sidebar .about {
+  margin: 0 !important;
+  padding: 7px 13px !important;
+  border-radius: 999px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  background: var(--prism-glass) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--prism-stroke) !important;
+ }
 
- /* Floating bottom One UI Glass Navigation Pill on Start Screen */
+ /* Prism Floating Bottom Liquid Glass Pill Dock on Start Screen */
  #start-nav {
   position: fixed !important;
   left: 50% !important;
@@ -82,91 +170,217 @@ body { padding-top: var(--sat); padding-bottom: var(--sab); }
   flex-direction: row !important;
   align-items: center !important;
   gap: 4px !important;
-  padding: 6px !important;
+  padding: 5px !important;
   width: auto !important;
-  max-width: calc(100vw - 28px) !important;
+  max-width: calc(100vw - 24px) !important;
   border-radius: 999px !important;
-  background: rgba(250, 250, 252, 0.82) !important;
-  backdrop-filter: blur(24px) saturate(170%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(170%) !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  background: var(--prism-glass-strong) !important;
+  backdrop-filter: blur(26px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(180%) !important;
+  border: 1px solid var(--prism-stroke) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14), inset 0 1px 0 var(--prism-hi) !important;
  }
  #start-nav button {
-  padding: 10px 14px !important;
+  padding: 10px 16px !important;
   border-radius: 999px !important;
   font-size: 13px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   white-space: nowrap !important;
-  transition: transform 0.16s ease, background 0.2s ease !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--prism-text2) !important;
  }
- #start-nav button:active { transform: scale(0.95); }
  #start-nav button.selected {
-  background: rgba(66, 122, 210, 0.14) !important;
-  color: var(--accent, #427ad2) !important;
+  background: var(--prism-accent-soft) !important;
+  color: var(--prism-accent) !important;
  }
 
+ /* Compact, space-efficient Start Content */
  #start-content {
-  padding: 10px 16px 24px !important;
+  padding: 8px 16px 24px !important;
  }
- #start-content h2 { font-size: 20px !important; margin-bottom: 4px !important; }
- .app-cards, .template-grid {
-  grid-template-columns: 1fr !important;
-  gap: 10px !important;
+ #start-content h2 {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  margin: 10px 0 8px 4px !important;
+  color: var(--prism-text2) !important;
+ }
+ .app-cards {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
  }
  .app-card {
-  flex-direction: row !important;
+  flex-direction: column !important;
   align-items: center !important;
-  text-align: left !important;
-  padding: 16px !important;
-  border-radius: 22px !important;
-  gap: 14px !important;
-  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 14px 8px !important;
+  border-radius: 24px !important;
+  gap: 8px !important;
+  background: var(--prism-card) !important;
+  border: 1px solid var(--prism-stroke) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
  }
- .app-card:active { transform: scale(0.97); }
- .app-card img { width: 46px !important; height: 46px !important; margin: 0 !important; flex: none; }
+ .app-card img { width: 42px !important; height: 42px !important; margin: 0 !important; flex: none; }
+ .app-card h3, .app-card strong { font-size: 13.5px !important; line-height: 1.2 !important; margin: 0 !important; }
+ .app-card p, .app-card span { display: none !important; }
 
- /* Phone Editor: frosted glass topbar + compact scrollable ribbon + glass bottom-sheet inspector */
+ .template-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+ }
+ .template-card {
+  border-radius: 22px !important;
+  padding: 14px !important;
+  background: var(--prism-card) !important;
+  border: 1px solid var(--prism-stroke) !important;
+ }
+
+ /* =====================================================
+    Phone Editor: Maximum Document Space + Floating Glass Pills
+    ===================================================== */
+ #editor {
+  background: var(--prism-bg) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: calc(100vh - var(--sat) - var(--sab)) !important;
+ }
+
+ /* Compact Floating Top Glass Pill (no button squishing) */
  .topbar {
-  padding: 6px 10px !important;
+  margin: 6px 10px 4px !important;
+  padding: 5px 8px !important;
   gap: 6px !important;
-  background: rgba(250, 250, 252, 0.84) !important;
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
- }
- .quick-actions button, #toggle-inspector, #toggle-ai {
-  min-width: 36px;
-  min-height: 36px;
   border-radius: 999px !important;
+  background: var(--prism-glass-strong) !important;
+  backdrop-filter: blur(24px) saturate(175%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(175%) !important;
+  border: 1px solid var(--prism-stroke) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--prism-hi) !important;
+  display: flex !important;
+  align-items: center !important;
  }
- #ribbon {
+ .quick-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  flex: none !important;
+ }
+ .quick-actions button {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: 0 !important;
+ }
+ #tabs {
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 2px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+ }
+ #tabs .tab {
   padding: 6px 10px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  flex: none !important;
+ }
+ #toggle-ai, #toggle-inspector {
+  height: 32px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  flex: none !important;
+ }
+
+ /* Compact Single-Row Scrollable Glass Ribbon */
+ #ribbon {
+  margin: 0 10px 6px !important;
+  padding: 5px 8px !important;
   gap: 6px !important;
   flex-wrap: nowrap !important;
-  background: rgba(255, 255, 255, 0.82) !important;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  border-radius: 20px !important;
+  background: var(--prism-glass) !important;
+  backdrop-filter: blur(20px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(165%) !important;
+  border: 1px solid var(--prism-stroke) !important;
+  min-height: 42px !important;
+  align-items: center !important;
  }
- .ribbon-group { flex: none !important; }
+ #ribbon button, #ribbon select {
+  height: 32px !important;
+  padding: 0 9px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+  flex: none !important;
+ }
+
+ #formula-bar {
+  margin: 0 10px 6px !important;
+  border-radius: 16px !important;
+  padding: 4px 10px !important;
+  background: var(--prism-card) !important;
+  border: 1px solid var(--prism-stroke) !important;
+ }
+
+ /* Hide vertical PC rail & bulky footer on phone so document viewport is huge */
+ .workarea { flex: 1 1 auto !important; min-height: 0 !important; }
  .workarea .rail { display: none !important; }
+ footer {
+  padding: 4px 14px !important;
+  height: 26px !important;
+  font-size: 11px !important;
+  background: transparent !important;
+  border-top: 0 !important;
+ }
+ footer .zoom { display: none !important; }
+
+ /* Clean edge-to-edge document page on phone */
+ #viewport { padding: 4px 8px 16px !important; }
  .typing-page {
   width: 100% !important;
   min-width: 0 !important;
-  padding: 22px 18px !important;
-  margin: 10px 8px 60px !important;
-  border-radius: 18px !important;
+  padding: 20px 16px !important;
+  margin: 0 0 24px !important;
+  border-radius: 22px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06) !important;
  }
  .present-wrap { flex-direction: column-reverse !important; }
  .slide-list {
   width: 100% !important;
-  height: 92px !important;
+  height: 82px !important;
   flex-direction: row !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
   border-right: 0 !important;
-  border-top: 1px solid rgba(0,0,0,.08) !important;
+  border-top: 1px solid var(--prism-stroke) !important;
+  padding: 6px !important;
+  gap: 8px !important;
  }
- /* Bottom glass sheet inspector on phone */
+
+ /* Prism Floating Glass Bottom Sheet Inspector */
  #inspector {
   position: fixed !important;
   left: 10px !important;
@@ -174,15 +388,16 @@ body { padding-top: var(--sat); padding-bottom: var(--sab); }
   top: auto !important;
   bottom: calc(var(--sab) + 10px) !important;
   width: auto !important;
-  max-height: 58vh !important;
+  max-height: 54vh !important;
+  overflow-y: auto !important;
   z-index: 70 !important;
-  border-radius: 26px !important;
-  background: rgba(250, 250, 252, 0.9) !important;
-  backdrop-filter: blur(26px) saturate(170%) !important;
-  -webkit-backdrop-filter: blur(26px) saturate(170%) !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.2) !important;
+  border-radius: 28px !important;
+  background: var(--prism-glass-strong) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border: 1px solid var(--prism-stroke) !important;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.22), inset 0 1px 0 var(--prism-hi) !important;
   padding: 16px !important;
+  animation: wsSheetUp 0.28s var(--prism-spring);
  }
- footer .zoom { display: none !important; }
 }

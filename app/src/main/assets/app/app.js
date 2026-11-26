@@ -196,7 +196,7 @@
 
  function renderInspector() {
   const kind = info.kind;
-  let html = `<h3>서식 · 도구</h3>`;
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin:0 -16px 14px;padding:12px 16px;border-bottom:1px solid var(--line)"><h3 style="margin:0;padding:0;border:0">서식 · 도구</h3><button id="close-inspector" style="width:28px;height:28px;border-radius:999px;background:rgba(120,130,150,.14);font-size:15px;display:grid;place-items:center" aria-label="닫기">×</button></div>`;
   html += `<section class="inspector-section ai-box" id="ai-panel" hidden>
    <h4>✦ AI 도우미 <span class="npu-badge">${esc(info.npu || '로컬 AI')}</span></h4>
    <div class="ai-actions">
@@ -232,6 +232,13 @@
   renderTabs();
   renderRibbon();
   renderInspector();
+  if (window.innerWidth < 880) {
+   inspectorShown = false;
+   $('inspector').hidden = true;
+  } else {
+   inspectorShown = true;
+   $('inspector').hidden = false;
+  }
   const vp = $('viewport');
   const onChange = state => {
    if (state.dirty) {
@@ -274,6 +281,12 @@
    docTitle = res.title || '제목 없음';
    docModified = false;
    docImported = !!res.imported;
+   if (res.kind && APPS[res.kind]) {
+    info.kind = res.kind;
+    const app = APPS[res.kind];
+    document.documentElement.style.setProperty('--accent', app.color);
+    document.documentElement.style.setProperty('--soft', app.soft);
+   }
    mountEditor();
    editor.load(res, 'blank');
    updateHeader();
@@ -455,10 +468,13 @@
   if (btn.dataset.template) { openNew(btn.dataset.template); return; }
   if (btn.dataset.tab) { tab = btn.dataset.tab; renderTabs(); renderRibbon(); return; }
   if (btn.dataset.start) { if (btn.dataset.start === 'open') await openFile(null); else renderStart(btn.dataset.start); return; }
-  if (btn.id === 'toggle-inspector') { inspectorShown = !inspectorShown; $('inspector').hidden = !inspectorShown; }
+  if (btn.id === 'toggle-inspector') { const cur = !$('inspector').hidden; inspectorShown = !cur; $('inspector').hidden = !inspectorShown; return; }
+  if (btn.id === 'close-inspector') { inspectorShown = false; $('inspector').hidden = true; return; }
   if (btn.id === 'toggle-ai') {
+   const wasHidden = $('inspector').hidden;
    inspectorShown = true; $('inspector').hidden = false;
-   const ap = $('ai-panel'); if (ap) ap.hidden = !ap.hidden;
+   const ap = $('ai-panel'); if (ap) ap.hidden = wasHidden ? false : !ap.hidden;
+   return;
   }
   if (btn.dataset.symbol && editor?.exec) { editor.exec('symbol', btn.dataset.symbol); return; }
   if (btn.dataset.outlineIdx !== undefined && editor?.scrollToHeading) { editor.scrollToHeading(+btn.dataset.outlineIdx); return; }

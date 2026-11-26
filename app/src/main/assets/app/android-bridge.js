@@ -159,10 +159,18 @@
     nav.appendChild(b);
    }
   }
-  if (window.innerWidth < 640) {
+  if (window.innerWidth < 880) {
    const insp = document.getElementById('inspector');
    if (insp) insp.hidden = true;
   }
+  window.addEventListener('resize', () => {
+   const insp = document.getElementById('inspector');
+   if (insp && window.innerWidth < 640) insp.hidden = true;
+   if (window.PillNav) {
+    requestAnimationFrame(() => window.PillNav.refresh());
+    setTimeout(() => window.PillNav && window.PillNav.refresh(), 120);
+   }
+  });
 
   document.querySelectorAll('#start-nav, .topbar, #ribbon, #inspector, #find-bar, #start-search-fab, #start-search-bar, #exit-focus, .rail').forEach(bindGlow);
   bindPillScrub('#start-nav', 'button');

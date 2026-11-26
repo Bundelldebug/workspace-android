@@ -31,7 +31,7 @@ import java.io.OutputStream;
  * 아이콘·UI·리본·서식 패널·편집기(타이핑/그래프즈/프레젠트)를 WebView + AndroidHost 브리지로 그대로 이식.
  */
 public final class MainActivity extends Activity {
-    static final String VERSION = "9.5.5";
+    static final String VERSION = "9.5.6";
     private static final int REQ_OPEN = 5001, REQ_SAVE_AS = 5002, REQ_IMAGE = 5003;
 
     WebView web;
@@ -90,14 +90,28 @@ public final class MainActivity extends Activity {
             return WindowInsets.CONSUMED;
         });
         setContentView(root);
-        WindowInsetsController ctrl = w.getInsetsController();
-        if (ctrl != null) {
-            int flag = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
-            ctrl.setSystemBarsAppearance(flag, flag);
-        }
+        applySystemBarAppearance(OfficeCodec.prefs(this).getString("ui_theme", "system"));
         handleIncomingIntent(getIntent(), false);
         web.loadUrl("file:///android_asset/app/index.html?kind=" + currentKind);
         Updater.autoCheck(this);
+    }
+
+    private void applySystemBarAppearance(String theme) {
+        boolean isSysDark = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        boolean dark = "dark".equals(theme) || ("system".equals(theme) && isSysDark);
+        if (web != null) web.setBackgroundColor(dark ? 0xFF0C0F16 : 0xFFF3F6FC);
+        WindowInsetsController ctrl = getWindow().getInsetsController();
+        if (ctrl != null) {
+            int mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+            ctrl.setSystemBarsAppearance(dark ? 0 : mask, mask);
+        }
+    }
+
+    @Override public void onConfigurationChanged(android.content.res.Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        applySystemBarAppearance(OfficeCodec.prefs(this).getString("ui_theme", "system"));
+        pushInsets();
     }
 
     @Override protected void onNewIntent(Intent intent) {
@@ -392,11 +406,16 @@ public final class MainActivity extends Activity {
                     }
                     case "setPref": {
                         android.content.SharedPreferences.Editor ed = OfficeCodec.prefs(MainActivity.this).edit();
-                        if (args.has("theme")) ed.putString("ui_theme", args.optString("theme", "system"));
+                        String newTheme = null;
+                        if (args.has("theme")) { newTheme = args.optString("theme", "system"); ed.putString("ui_theme", newTheme); }
                         if (args.has("glassT")) ed.putFloat("ui_glass_t", (float) args.optDouble("glassT", 0.55));
                         if (args.has("glassStyle")) ed.putString("ui_glass_style", args.optString("glassStyle", "prism"));
                         if (args.has("autoSave")) ed.putBoolean("ui_auto_save", args.optBoolean("autoSave", true));
                         ed.apply();
+                        if (newTheme != null) {
+                            final String ft = newTheme;
+                            runOnUiThread(() -> applySystemBarAppearance(ft));
+                        }
                         reply(id, true, true, null);
                         break;
                     }

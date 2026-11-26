@@ -147,8 +147,15 @@ public class WorkspaceUiTest {
         ActivityController<MainActivity> ctrl = Robolectric.buildActivity(MainActivity.class).setup();
         MainActivity act = ctrl.get();
         assertEquals("워크스페이스", act.getString(R.string.app_name));
-        assertEquals("9.5.5", MainActivity.VERSION);
+        assertEquals("9.5.6", MainActivity.VERSION);
         assertNotNull(act.web);
+        // Verify mobile CSS strictly guards hidden elements so #editor/#inspector never leak on Start screen
+        try (java.io.InputStream cssIn = act.getAssets().open("app/android-mobile.css")) {
+            String css = new String(OfficeCodec.readAll(cssIn), StandardCharsets.UTF_8);
+            assertTrue(css.contains("#editor:not([hidden])"));
+            assertTrue(css.contains("#inspector:not([hidden])"));
+            assertTrue(css.contains("#editor[hidden]"));
+        }
         // Back button inside a sub-app returns cleanly to workspace hub instead of killing app
         act.currentKind = "typing";
         act.onBackPressed();

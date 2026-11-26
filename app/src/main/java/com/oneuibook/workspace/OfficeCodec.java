@@ -53,23 +53,65 @@ final class OfficeCodec {
         JSONArray out = new JSONArray();
         try {
             JSONArray all = new JSONArray(prefs(c).getString("recent_docs", "[]"));
+            List<JSONObject> pinned = new ArrayList<>();
+            List<JSONObject> normal = new ArrayList<>();
             for (int i = 0; i < all.length(); i++) {
                 JSONObject it = all.getJSONObject(i);
                 if (filterKind == null || "workspace".equals(filterKind) || filterKind.equals(it.optString("kind"))) {
-                    out.put(it);
+                    if (it.optBoolean("pinned", false)) pinned.add(it); else normal.add(it);
                 }
             }
+            for (JSONObject it : pinned) out.put(it);
+            for (JSONObject it : normal) out.put(it);
         } catch (Exception ignored) {}
         return out;
+    }
+
+    static boolean togglePinRecent(Context c, String path) {
+        boolean nextPin = false;
+        try {
+            JSONArray all = new JSONArray(prefs(c).getString("recent_docs", "[]"));
+            for (int i = 0; i < all.length(); i++) {
+                JSONObject it = all.getJSONObject(i);
+                if (path.equals(it.optString("path"))) {
+                    nextPin = !it.optBoolean("pinned", false);
+                    it.put("pinned", nextPin);
+                    break;
+                }
+            }
+            prefs(c).edit().putString("recent_docs", all.toString()).apply();
+        } catch (Exception ignored) {}
+        return nextPin;
+    }
+
+    static void removeRecent(Context c, String path) {
+        try {
+            JSONArray all = new JSONArray(prefs(c).getString("recent_docs", "[]"));
+            JSONArray next = new JSONArray();
+            for (int i = 0; i < all.length(); i++) {
+                JSONObject it = all.getJSONObject(i);
+                if (!path.equals(it.optString("path"))) next.put(it);
+            }
+            prefs(c).edit().putString("recent_docs", next.toString()).apply();
+            if (path != null && path.startsWith(docsDir(c).getAbsolutePath())) {
+                new File(path).delete();
+                new File(path + ".owjson").delete();
+            }
+        } catch (Exception ignored) {}
     }
 
     static void addRecent(Context c, String path, String name, String kind) {
         try {
             JSONArray all = new JSONArray(prefs(c).getString("recent_docs", "[]"));
+            boolean wasPinned = false;
+            for (int i = 0; i < all.length(); i++) {
+                JSONObject it = all.getJSONObject(i);
+                if (path.equals(it.optString("path"))) wasPinned = it.optBoolean("pinned", false);
+            }
             JSONArray next = new JSONArray();
             String now = new SimpleDateFormat("M월 d일 HH:mm", Locale.KOREA).format(new Date());
-            next.put(new JSONObject().put("path", path).put("name", name).put("kind", kind).put("time", now));
-            for (int i = 0; i < all.length() && next.length() < 20; i++) {
+            next.put(new JSONObject().put("path", path).put("name", name).put("kind", kind).put("time", now).put("pinned", wasPinned));
+            for (int i = 0; i < all.length() && next.length() < 30; i++) {
                 JSONObject it = all.getJSONObject(i);
                 if (!path.equals(it.optString("path"))) next.put(it);
             }

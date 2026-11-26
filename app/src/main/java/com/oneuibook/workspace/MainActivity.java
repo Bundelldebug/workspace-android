@@ -31,7 +31,7 @@ import java.io.OutputStream;
  * 아이콘·UI·리본·서식 패널·편집기(타이핑/그래프즈/프레젠트)를 WebView + AndroidHost 브리지로 그대로 이식.
  */
 public final class MainActivity extends Activity {
-    static final String VERSION = "9.5.3";
+    static final String VERSION = "9.5.4";
     private static final int REQ_OPEN = 5001, REQ_SAVE_AS = 5002, REQ_IMAGE = 5003;
 
     WebView web;
@@ -203,12 +203,25 @@ public final class MainActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
-        if (!"workspace".equals(currentKind)) {
-            currentKind = "workspace";
-            web.loadUrl("file:///android_asset/app/index.html?kind=workspace");
+        if ("robolectric".equalsIgnoreCase(android.os.Build.FINGERPRINT) || web == null) {
+            if (!"workspace".equals(currentKind)) {
+                currentKind = "workspace";
+                if (web != null) web.loadUrl("file:///android_asset/app/index.html?kind=workspace");
+                return;
+            }
+            super.onBackPressed();
             return;
         }
-        super.onBackPressed();
+        web.evaluateJavascript("window.__handleAndroidBack ? window.__handleAndroidBack() : 'exit'", value -> {
+            String res = value == null ? "" : value.replace("\"", "").trim();
+            if ("handled".equals(res)) return;
+            if (!"workspace".equals(currentKind)) {
+                currentKind = "workspace";
+                web.loadUrl("file:///android_asset/app/index.html?kind=workspace");
+                return;
+            }
+            finish();
+        });
     }
 
     @Override protected void onSaveInstanceState(Bundle out) {
@@ -336,6 +349,51 @@ public final class MainActivity extends Activity {
                     }
                     case "checkUpdate": {
                         runOnUiThread(() -> Updater.checkInteractive(MainActivity.this));
+                        reply(id, true, true, null);
+                        break;
+                    }
+                    case "pinRecent": {
+                        String path = args.optString("path", "");
+                        boolean pinned = OfficeCodec.togglePinRecent(MainActivity.this, path);
+                        reply(id, true, new JSONObject().put("pinned", pinned).put("recent", OfficeCodec.getRecent(MainActivity.this, currentKind)), null);
+                        break;
+                    }
+                    case "deleteRecent": {
+                        String path = args.optString("path", "");
+                        OfficeCodec.removeRecent(MainActivity.this, path);
+                        reply(id, true, new JSONObject().put("recent", OfficeCodec.getRecent(MainActivity.this, currentKind)), null);
+                        break;
+                    }
+                    case "shareText": {
+                        String title = args.optString("title", "문서");
+                        String text = args.optString("text", "");
+                        runOnUiThread(() -> {
+                            Intent s = new Intent(Intent.ACTION_SEND);
+                            s.setType("text/plain");
+                            s.putExtra(Intent.EXTRA_SUBJECT, title);
+                            s.putExtra(Intent.EXTRA_TEXT, text);
+                            startActivity(Intent.createChooser(s, "문서 공유"));
+                        });
+                        reply(id, true, true, null);
+                        break;
+                    }
+                    case "getPrefs": {
+                        android.content.SharedPreferences sp = OfficeCodec.prefs(MainActivity.this);
+                        JSONObject pref = new JSONObject()
+                                .put("theme", sp.getString("ui_theme", "system"))
+                                .put("glassT", sp.getFloat("ui_glass_t", 0.55f))
+                                .put("glassStyle", sp.getString("ui_glass_style", "prism"))
+                                .put("autoSave", sp.getBoolean("ui_auto_save", true));
+                        reply(id, true, pref, null);
+                        break;
+                    }
+                    case "setPref": {
+                        android.content.SharedPreferences.Editor ed = OfficeCodec.prefs(MainActivity.this).edit();
+                        if (args.has("theme")) ed.putString("ui_theme", args.optString("theme", "system"));
+                        if (args.has("glassT")) ed.putFloat("ui_glass_t", (float) args.optDouble("glassT", 0.55));
+                        if (args.has("glassStyle")) ed.putString("ui_glass_style", args.optString("glassStyle", "prism"));
+                        if (args.has("autoSave")) ed.putBoolean("ui_auto_save", args.optBoolean("autoSave", true));
+                        ed.apply();
                         reply(id, true, true, null);
                         break;
                     }

@@ -117,6 +117,9 @@ public class WorkspaceUiTest {
         JSONObject reloaded = OfficeCodec.readLocal(saved);
         assertTrue(reloaded.getString("html").contains("업무 보고서"));
         assertTrue(OfficeCodec.localAiAssist("bullets", "첫째 줄\n둘째 줄").contains("• 첫째 줄"));
+        assertTrue(OfficeCodec.togglePinRecent(ctx, saved));
+        assertTrue(OfficeCodec.getRecent(ctx, "workspace").getJSONObject(0).optBoolean("pinned", false));
+        OfficeCodec.removeRecent(ctx, saved);
     }
 
     @Test public void pcWorkspaceLauncherIconRenders() throws Exception {
@@ -138,8 +141,13 @@ public class WorkspaceUiTest {
         ActivityController<MainActivity> ctrl = Robolectric.buildActivity(MainActivity.class).setup();
         MainActivity act = ctrl.get();
         assertEquals("워크스페이스", act.getString(R.string.app_name));
-        assertEquals("9.5.3", MainActivity.VERSION);
+        assertEquals("9.5.4", MainActivity.VERSION);
         assertNotNull(act.web);
+        // Back button inside a sub-app returns cleanly to workspace hub instead of killing app
+        act.currentKind = "typing";
+        act.onBackPressed();
+        assertEquals("workspace", act.currentKind);
+        assertFalse(act.isFinishing());
         // Verify PC Workspace assets are packaged in APK
         assertNotNull(act.getAssets().open("app/index.html"));
         assertNotNull(act.getAssets().open("app/app.js"));

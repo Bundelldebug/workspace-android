@@ -22,6 +22,12 @@
     this.page.innerHTML = data.html;
    } else if (template === 'report') {
     this.page.innerHTML = `<h1>업무 보고서</h1><p style="color:#6b7280">작성일: ${new Date().toISOString().slice(0, 10)} · 작성자: 홍길동</p><h2>1. 개요</h2><p>이번 분기 핵심 목표와 추진 배경을 간결하게 정리합니다.</p><h2>2. 주요 진행 내용</h2><ul><li>핵심 기능 설계 및 구현 완료</li><li>성능 최적화 및 품질 검증 진행</li></ul><h2>3. 다음 단계</h2><table><tr><th>항목</th><th>담당</th><th>일정</th></tr><tr><td>최종 점검</td><td>개발팀</td><td>이번 주 금요일</td></tr><tr><td>배포 및 안내</td><td>운영팀</td><td>다음 주 월요일</td></tr></table>`;
+   } else if (template === 'minutes') {
+    this.page.innerHTML = `<h1>회의록</h1><p style="color:#6b7280">일시: ${new Date().toISOString().slice(0, 10)} · 참석자: 팀 전체</p><h2>1. 핵심 안건</h2><ul><li>신규 기능 출시 일정 확정</li><li>사용자 피드백 우선순위 정리</li></ul><h2>2. 결정 사항</h2><div class="ws-callout">주요 개선 항목을 이번 주 내로 반영하고 테스트를 완료합니다.</div><h2>3. 액션 아이템</h2><table><tr><th>할 일</th><th>담당자</th><th>마감일</th></tr><tr><td>UI 최종 점검</td><td>디자인</td><td>수요일</td></tr><tr><td>배포 패키지 검증</td><td>엔지니어링</td><td>금요일</td></tr></table>`;
+   } else if (template === 'resume') {
+    this.page.innerHTML = `<h1>홍길동 — 이력서</h1><p style="color:#6b7280">이메일: user@example.com · 연락처: 010-0000-0000</p><h2>핵심 역량</h2><ul><li>모바일·웹 프로덕트 설계 및 성능 최적화</li><li>크로스 플랫폼 협업 및 문제 해결</li></ul><h2>주요 경력</h2><table><tr><th>기간</th><th>소속</th><th>역할 및 성과</th></tr><tr><td>2024 ~ 현재</td><td>프로덕트 팀</td><td>핵심 앱 아키텍처 개선 및 사용자 경험 고도화</td></tr></table><h2>학력 및 자격</h2><p>OO대학교 컴퓨터공학과 졸업</p>`;
+   } else if (template === 'plan') {
+    this.page.innerHTML = `<h1>프로젝트 계획서</h1><p style="color:#6b7280">기준일: ${new Date().toISOString().slice(0, 10)}</p><h2>목표</h2><p>핵심 마일스톤과 완료 기준을 명확히 정의합니다.</p><h2>체크리스트</h2><p>☐ 요구사항 확정 및 일정 수립</p><p>☐ 프로토타입 제작 및 사용성 검토</p><p>☐ 품질 테스트 및 최종 배포</p>`;
    } else {
     this.page.innerHTML = '<p><br></p>';
    }
@@ -73,6 +79,15 @@
     document.execCommand('insertHTML', false, '<table><tr><th>항목</th><th>내용</th><th>비고</th></tr><tr><td><br></td><td><br></td><td><br></td></tr><tr><td><br></td><td><br></td><td><br></td></tr></table><p><br></p>');
    } else if (cmd === 'hr') {
     document.execCommand('insertHTML', false, '<hr class="page-break"><p><br></p>');
+   } else if (cmd === 'checklist') {
+    document.execCommand('insertHTML', false, '<p>☐ 할 일을 입력하세요</p>');
+   } else if (cmd === 'callout') {
+    document.execCommand('insertHTML', false, '<div class="ws-callout">핵심 내용을 강조해 적어보세요.</div><p><br></p>');
+   } else if (cmd === 'code') {
+    document.execCommand('insertHTML', false, '<pre class="ws-code">// 코드를 입력하세요</pre><p><br></p>');
+   } else if (cmd === 'date') {
+    const d = new Date();
+    document.execCommand('insertText', false, `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`);
    } else if (cmd === 'symbol' && val) {
     document.execCommand('insertText', false, val);
    } else if (cmd === 'hilite') {
@@ -227,6 +242,30 @@
       A4: { v: '교통 · 통신' }, B4: { v: '고정' }, C4: { v: '180000', fmt: 'currency' }, D4: { v: '162000', fmt: 'currency' }, E4: { v: '=C4-D4', fmt: 'currency' },
       A5: { v: '여가 · 구독' }, B5: { v: '변동' }, C5: { v: '200000', fmt: 'currency' }, D5: { v: '124000', fmt: 'currency' }, E5: { v: '=C5-D5', fmt: 'currency' },
       A6: { v: '합계', b: true, bg: '#f4f6f9' }, B6: { v: '', bg: '#f4f6f9' }, C6: { v: '=SUM(C2:C5)', b: true, fmt: 'currency', bg: '#f4f6f9' }, D6: { v: '=SUM(D2:D5)', b: true, fmt: 'currency', bg: '#f4f6f9' }, E6: { v: '=SUM(E2:E5)', b: true, fmt: 'currency', bg: '#f4f6f9' }
+     }
+    }];
+    this.activeSheet = 0;
+   } else if (template === 'schedule') {
+    this.sheets = [{
+     name: '주간 일정표',
+     cells: {
+      A1: { v: '업무 항목', b: true, bg: '#e6effb' }, B1: { v: '담당자', b: true, bg: '#e6effb' }, C1: { v: '시작일', b: true, bg: '#e6effb' }, D1: { v: '마감일', b: true, bg: '#e6effb' }, E1: { v: '진행률', b: true, bg: '#e6effb' },
+      A2: { v: '기획 및 설계' }, B2: { v: '김민수' }, C2: { v: '월요일' }, D2: { v: '화요일' }, E2: { v: '1', fmt: 'percent' },
+      A3: { v: '핵심 기능 구현' }, B3: { v: '이지은' }, C3: { v: '수요일' }, D3: { v: '목요일' }, E3: { v: '0.75', fmt: 'percent' },
+      A4: { v: '테스트 및 배포' }, B4: { v: '박서준' }, C4: { v: '금요일' }, D4: { v: '금요일' }, E4: { v: '0.3', fmt: 'percent' },
+      A5: { v: '평균 진행률', b: true, bg: '#f4f6f9' }, E5: { v: '=AVERAGE(E2:E4)', b: true, fmt: 'percent', bg: '#f4f6f9' }
+     }
+    }];
+    this.activeSheet = 0;
+   } else if (template === 'sales') {
+    this.sheets = [{
+     name: '매출·손익',
+     cells: {
+      A1: { v: '월', b: true, bg: '#edf4f0' }, B1: { v: '매출', b: true, bg: '#edf4f0' }, C1: { v: '비용', b: true, bg: '#edf4f0' }, D1: { v: '순이익', b: true, bg: '#edf4f0' },
+      A2: { v: '1분기' }, B2: { v: '4200000', fmt: 'currency' }, C2: { v: '2600000', fmt: 'currency' }, D2: { v: '=B2-C2', fmt: 'currency' },
+      A3: { v: '2분기' }, B3: { v: '5100000', fmt: 'currency' }, C3: { v: '2950000', fmt: 'currency' }, D3: { v: '=B3-C3', fmt: 'currency' },
+      A4: { v: '3분기' }, B4: { v: '5850000', fmt: 'currency' }, C4: { v: '3100000', fmt: 'currency' }, D4: { v: '=B4-C4', fmt: 'currency' },
+      A5: { v: '합계', b: true, bg: '#f4f6f9' }, B5: { v: '=SUM(B2:B4)', b: true, fmt: 'currency', bg: '#f4f6f9' }, C5: { v: '=SUM(C2:C4)', b: true, fmt: 'currency', bg: '#f4f6f9' }, D5: { v: '=SUM(D2:D4)', b: true, fmt: 'currency', bg: '#f4f6f9' }
      }
     }];
     this.activeSheet = 0;
@@ -572,11 +611,37 @@
     this.slides = [
      { id: 's-1', bg: '#f6f8fc', transition: 'fade', duration: 0.5, notes: '오프닝 인사 및 주제 소개', items: [
       { id: 'e-1', type: 'text', x: 8, y: 26, w: 84, h: 20, text: '새로운 가능성', size: 46, bold: true, color: '#1d2430', align: 'left' },
-      { id: 'e-2', type: 'text', x: 8, y: 50, w: 72, h: 16, text: '프로젝트 제안 · One UI Book 팀', size: 22, bold: false, color: '#647084', align: 'left' }
+      { id: 'e-2', type: 'text', x: 8, y: 50, w: 72, h: 16, text: '프로젝트 제안 · 워크스페이스 팀', size: 22, bold: false, color: '#647084', align: 'left' }
      ] },
      { id: 's-2', bg: '#ffffff', transition: 'push', duration: 0.5, notes: '핵심 문제와 해결 방향 설명', items: [
       { id: 'e-3', type: 'text', x: 8, y: 12, w: 84, h: 14, text: '핵심 목표', size: 34, bold: true, color: '#1d2430', align: 'left' },
-      { id: 'e-4', type: 'text', x: 8, y: 32, w: 84, h: 48, text: '• 더 빠른 실행과 가벼운 리소스\n• 직관적인 편집 경험\n• 일관된 One UI 9.5 디자인', size: 24, bold: false, color: '#333d4b', align: 'left' }
+      { id: 'e-4', type: 'text', x: 8, y: 32, w: 84, h: 48, text: '• 더 빠른 실행과 가벼운 리소스\n• 직관적인 편집 경험\n• 일관된 모던 글래스 디자인', size: 24, bold: false, color: '#333d4b', align: 'left' }
+     ] }
+    ];
+    this.active = 0;
+   } else if (template === 'weekly') {
+    this.slides = [
+     { id: 's-1', bg: '#f4f8ff', transition: 'fade', duration: 0.5, notes: '주간 보고 개요', items: [
+      { id: 'e-1', type: 'text', x: 8, y: 28, w: 84, h: 20, text: '주간 성과 보고', size: 44, bold: true, color: '#1e293b', align: 'left' },
+      { id: 'e-2', type: 'text', x: 8, y: 52, w: 72, h: 14, text: '핵심 지표 · 완료 항목 · 다음 주 계획', size: 20, bold: false, color: '#64748b', align: 'left' }
+     ] },
+     { id: 's-2', bg: '#ffffff', transition: 'push', duration: 0.5, notes: '이번 주 주요 성과', items: [
+      { id: 'e-3', type: 'text', x: 8, y: 12, w: 84, h: 14, text: '이번 주 완료 항목', size: 32, bold: true, color: '#1e293b', align: 'left' },
+      { id: 'e-4', type: 'text', x: 8, y: 32, w: 84, h: 50, text: '✓ 핵심 기능 개발 및 검증 완료\n✓ 주요 이슈 100% 해결\n✓ 다음 주 릴리즈 준비 완료', size: 22, bold: false, color: '#334155', align: 'left' }
+     ] }
+    ];
+    this.active = 0;
+   } else if (template === 'launch') {
+    this.slides = [
+     { id: 's-1', bg: '#111827', transition: 'fade', duration: 0.5, notes: '키노트 오프닝', items: [
+      { id: 'e-1', type: 'text', x: 10, y: 30, w: 80, h: 20, text: 'Next Generation', size: 48, bold: true, color: '#f8fafc', align: 'center' },
+      { id: 'e-2', type: 'text', x: 14, y: 54, w: 72, h: 14, text: '더 빠르고 선명한 새로운 경험', size: 22, bold: false, color: '#94a3b8', align: 'center' }
+     ] },
+     { id: 's-2', bg: '#1e293b', transition: 'wipe', duration: 0.5, notes: '핵심 하이라이트', items: [
+      { id: 'e-3', type: 'text', x: 8, y: 14, w: 84, h: 14, text: '핵심 하이라이트', size: 34, bold: true, color: '#f8fafc', align: 'left' },
+      { id: 'e-4', type: 'shape', x: 8, y: 36, w: 26, h: 36, text: '속도 2배', size: 22, bold: true, color: '#0f172a', fill: '#93c5fd', align: 'center' },
+      { id: 'e-5', type: 'shape', x: 37, y: 36, w: 26, h: 36, text: '광학 글래스', size: 22, bold: true, color: '#0f172a', fill: '#a7f3d0', align: 'center' },
+      { id: 'e-6', type: 'shape', x: 66, y: 36, w: 26, h: 36, text: '완벽 호환', size: 22, bold: true, color: '#0f172a', fill: '#fde68a', align: 'center' }
      ] }
     ];
     this.active = 0;

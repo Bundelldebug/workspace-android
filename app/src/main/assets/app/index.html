@@ -43,9 +43,20 @@
     <button data-start="recent">최근 문서</button>
     <button data-start="open">문서 열기</button>
    </nav>
-   <button class="about" id="about">앱 정보</button>
+   <div class="start-footer-actions">
+    <button class="about" id="open-settings">화면·글래스</button>
+    <button class="about" id="about">앱 정보</button>
+   </div>
   </aside>
   <main id="start-content"></main>
+  <button id="start-search-fab" class="km-lens-glow" aria-label="문서 검색" title="문서 검색">
+   <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+  </button>
+  <div id="start-search-bar" hidden>
+   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+   <input id="start-search-input" type="search" placeholder="최근 문서·템플릿 검색...">
+   <button id="start-search-close" aria-label="검색 닫기">×</button>
+  </div>
  </section>
 
  <section id="editor" hidden>
@@ -59,9 +70,12 @@
     <button data-action="redo" title="다시 실행 (Ctrl+Y)"><img src="assets/cmd/redo.svg" alt=""></button>
    </div>
    <div id="tabs" role="tablist"></div>
-   <button id="toggle-ai" title="NPU AI 도우미">✦ AI</button>
+   <button id="focus-btn" data-action="focus" title="집중 모드">집중</button>
+   <button id="share-btn" data-action="share" title="문서 공유">공유</button>
+   <button id="toggle-ai" title="AI 도우미">✦ AI</button>
    <button id="toggle-inspector" title="서식 패널">서식</button>
   </div>
+  <button id="exit-focus" hidden>집중 모드 종료</button>
   <div id="ribbon"></div>
   <div id="formula-bar" hidden>
    <input id="cell-address" aria-label="선택한 셀" readonly>
@@ -114,13 +128,43 @@
  <dialog id="about-dialog">
   <img id="about-icon" alt="">
   <h2 id="about-name"></h2>
-  <p class="ver">9.5.3</p>
+  <p class="ver">9.5.4</p>
   <p>문서 · 스프레드시트 · 프레젠테이션</p>
   <p class="small">DOCX · XLSX · PPTX · ODF · HWP · HWPX · CSV · PDF</p>
   <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
    <button data-host="checkUpdate">업데이트 확인</button>
    <button id="close-about">확인</button>
   </div>
+ </dialog>
+
+ <dialog id="settings-dialog">
+  <h2>화면 및 글래스 설정</h2>
+  <div class="set-group">
+   <div class="set-row">
+    <span>테마</span>
+    <div class="set-seg" id="set-theme">
+     <button data-theme-val="system">시스템</button>
+     <button data-theme-val="light">라이트</button>
+     <button data-theme-val="dark">다크</button>
+    </div>
+   </div>
+   <div class="set-row">
+    <span>글래스 스타일</span>
+    <div class="set-seg" id="set-style">
+     <button data-style-val="prism">광학 글래스</button>
+     <button data-style-val="blur">블러</button>
+    </div>
+   </div>
+   <div class="set-row set-col">
+    <div style="display:flex;justify-content:space-between;width:100%"><span>글래스 투명도</span><span id="set-glass-val">55%</span></div>
+    <input type="range" id="set-glass-t" min="0" max="100" value="55">
+   </div>
+   <div class="set-row">
+    <span>편집 시 자동 저장</span>
+    <label class="ky-toggle"><input type="checkbox" id="set-autosave" checked><span></span></label>
+   </div>
+  </div>
+  <button id="close-settings">완료</button>
  </dialog>
 
  <script src="editors.js"></script>
@@ -132,7 +176,7 @@
    { box: ".quick-actions" },
    { box: ".rail" }
   ];
-  window.LIQUID = { glass: ["#toast", "#about-dialog"], morph: ["#about-dialog"] };
+  window.LIQUID = { glass: ["#toast", "#about-dialog", "#settings-dialog", "#find-bar", "#start-search-bar", "#start-search-fab", "#exit-focus"], morph: ["#about-dialog", "#settings-dialog"] };
  </script>
  <script src="pill.js"></script>
  <script src="liquid.js"></script>

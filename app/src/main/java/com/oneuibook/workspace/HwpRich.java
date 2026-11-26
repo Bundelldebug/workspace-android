@@ -129,10 +129,13 @@ final class HwpRich {
             String id = attr(it, "id");
             String href = attr(it, "href");
             if (id != null && href != null) {
-                String clean = href.replace('\\', '/');
+                String clean = href.replace('\\', '/').trim();
+                while (clean.startsWith("./")) clean = clean.substring(2);
+                while (clean.startsWith("../")) clean = clean.substring(3);
                 while (clean.startsWith("/")) clean = clean.substring(1);
                 String res = st.entriesLower.get(clean.toLowerCase(Locale.ROOT));
                 if (res == null) res = st.entriesLower.get(("contents/" + clean).toLowerCase(Locale.ROOT));
+                if (res == null) res = st.binByStem.get(baseName(clean).toLowerCase(Locale.ROOT));
                 if (res != null) {
                     st.manifest.put(id, res);
                     st.manifest.put(id.toLowerCase(Locale.ROOT), res);
@@ -268,6 +271,10 @@ final class HwpRich {
                 if (!im.isEmpty()) blocks.append(im);
             } else if ("rect".equals(nm) || "ellipse".equals(nm) || "polygon".equals(nm) || "container".equals(nm)) {
                 renderHwpxShapeBox(x, st, blocks);
+            } else if ("switch".equals(nm)) {
+                Element branch = kid(x, "case");
+                if (branch == null) branch = kid(x, "default");
+                if (branch != null) hwpxWalk(branch, st, curChar, line, blocks);
             } else if ("header".equals(nm) || "footer".equals(nm)) {
                 StringBuilder hf = new StringBuilder();
                 for (Element p : directSubListParagraphs(x)) hwpxBlock(p, st, hf);
@@ -737,16 +744,19 @@ final class HwpRich {
     }
 
     private static void renderHwpTable(List<HwpRec> recs, int start, int end, int ctrlLevel, HwpDocInfo info, StringBuilder out) {
-        int rowCount = 0;
+        int rowCount = 0, colCount = 0;
         List<HwpCell> cells = new ArrayList<>();
         int cellLevel = ctrlLevel + 1;
         int i = start + 1;
         while (i < end) {
             HwpRec r = recs.get(i);
-            if (r.tag == 0x4D && r.level == cellLevel && r.data.length >= 8) { rowCount = le16(r.data, 4); i++; }
-            else if (r.tag == 0x48 && r.level == cellLevel) {
+            if (r.tag == 0x4D && r.level == cellLevel && r.data.length >= 8) {
+                rowCount = le16(r.data, 4);
+                colCount = le16(r.data, 6);
+                i++;
+            } else if (r.tag == 0x48 && r.level == cellLevel) {
                 HwpCell cell = new HwpCell();
-                int off = r.data.length >= 34 ? 8 : (r.data.length >= 32 ? 6 : -1);
+                int off = detectCellPropsOffset(r.data, rowCount, colCount);
                 if (off > 0) {
                     cell.col = le16(r.data, off);
                     cell.row = le16(r.data, off + 2);
@@ -801,6 +811,24 @@ final class HwpRich {
             out.append("</tr>");
         }
         out.append("</table>");
+    }
+
+    private static int detectCellPropsOffset(byte[] data, int rowCount, int colCount) {
+        if (data == null || data.length < 32) return -1;
+        int maxR = rowCount > 0 ? rowCount : 500;
+        int maxC = colCount > 0 ? colCount : 200;
+        for (int cand : new int[]{6, 8}) {
+            if (cand + 26 > data.length) continue;
+            int col = le16(data, cand);
+            int row = le16(data, cand + 2);
+            int cs = le16(data, cand + 4);
+            int rs = le16(data, cand + 6);
+            long w = le32(data, cand + 8) & 0xFFFFFFFFL;
+            if (col < maxC && row < maxR && cs >= 1 && cs <= maxC && rs >= 1 && rs <= maxR && w > 0 && w < 200000L) {
+                return cand;
+            }
+        }
+        return data.length >= 34 ? 8 : 6;
     }
 
     private static void renderHwpGso(List<HwpRec> recs, int start, int end, HwpDocInfo info, StringBuilder out) {

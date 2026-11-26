@@ -25,6 +25,8 @@
  const pending = new Map();
  let seq = 0, info = null, editor = null, docPath = '', docTitle = '제목 없음', docModified = false, docImported = false;
  let tab = 'home', toastTimer = 0, inspectorShown = true, showIndex = 0;
+ let startSection = 'new', startQuery = '', autoSaveEnabled = true, autoSaveTimer = 0;
+ let uiPref = { theme: 'system', glassT: 0.55, glassStyle: 'prism', autoSave: true };
 
  function call(method, args = {}) {
   return new Promise((resolve, reject) => {
@@ -66,19 +68,26 @@
   call('setTitle', { title: editor ? docTitle : '', modified: docModified }).catch(() => {});
  }
 
- function renderStart(section = 'new') {
+ function renderStart(section = startSection) {
+  startSection = section;
   $('start').hidden = false;
   $('editor').hidden = true;
   $('find-bar').hidden = true;
+  document.body.classList.remove('focus-mode');
+  if ($('exit-focus')) $('exit-focus').hidden = true;
   document.querySelectorAll('[data-start]').forEach(b => b.classList.toggle('selected', b.dataset.start === section));
   let html = '';
   const kind = info.kind;
   const app = APPS[kind] || APPS.workspace;
+  const q = startQuery.trim().toLowerCase();
+  const filteredRecent = (info.recent || []).filter(it => !q || (it.name || '').toLowerCase().includes(q) || (it.path || '').toLowerCase().includes(q));
   if (info.recovery && kind !== 'workspace') {
    html += `<div class="recovery-banner"><span>저장되지 않은 작업의 복구 사본이 있습니다.</span><button data-action="recover">다시 열기</button></div>`;
   }
-  if (section === 'recent') {
-   html += `<h2>최근 문서</h2><p class="subtitle">마지막으로 작업한 문서를 이어서 열어보세요.</p>` + recentList(info.recent);
+  if (q) {
+   html += `<h2>"${esc(startQuery.trim())}" 검색 결과</h2><p class="subtitle">최근 문서 ${filteredRecent.length}건</p>` + recentList(filteredRecent);
+  } else if (section === 'recent') {
+   html += `<h2>최근 문서</h2><p class="subtitle">마지막으로 작업한 문서를 이어서 열어보세요. 별표로 상단 고정할 수 있습니다.</p>` + recentList(filteredRecent);
   } else if (kind === 'workspace') {
    html += `<h2>오늘의 작업을 시작하세요</h2><p class="subtitle">문서와 숫자, 이야기를 한곳에서.</p><div class="app-cards">` +
     ['typing', 'graphs', 'present'].map(k => {
@@ -86,27 +95,45 @@
      return `<button class="app-card" data-launch="${k}"><img src="assets/${k}.png" alt=""><b>${item.name}</b><span>${item.description.replace('\n', '<br>')}</span></button>`;
     }).join('') +
     `</div><div class="section-heading"><h3>최근 작업</h3><button class="text-button" data-start="open">문서 열기</button></div>` +
-    recentList(info.recent.slice(0, 6));
+    recentList(filteredRecent.slice(0, 8));
   } else {
-   const second = kind === 'typing'
-    ? ['report', '업무 보고서', '제목, 개요, 주요 내용과 다음 단계', '<div class="paper-lines"></div>']
+   const templates = kind === 'typing'
+    ? [
+       ['report', '업무 보고서', '개요·진행 내용·일정 표', '<div class="paper-lines"></div>'],
+       ['minutes', '회의록', '안건·결정 사항·담당 액션', '<div class="paper-lines"></div>'],
+       ['resume', '이력서 · 소개서', '경력·학력·핵심 역량 정리', '<div class="paper-lines"></div>'],
+       ['plan', '프로젝트 계획서', '목표·마일스톤·체크리스트', '<div class="paper-lines"></div>']
+      ]
     : kind === 'graphs'
-     ? ['budget', '월간 예산', '수입과 지출을 수식으로 정리', '<div class="paper-cells"></div>']
-     : ['pitch', '프로젝트 제안', '넓은 화면에 또렷한 메시지', '<div class="paper-slide"><strong>새로운 가능성</strong><small>프로젝트 제안 · One UI Book</small></div>'];
-   html += `<h2>새 ${app.noun}</h2><p class="subtitle">빈 작업에서 시작하거나 템플릿을 골라보세요.</p><div class="template-grid">` +
+     ? [
+        ['budget', '월간 예산', '수입과 지출을 수식으로 정리', '<div class="paper-cells"></div>'],
+        ['schedule', '주간 일정표', '담당자별 업무 진행률 추적', '<div class="paper-cells"></div>'],
+        ['sales', '매출·손익 분석', '분기 합계·평균·성장률 자동 계산', '<div class="paper-cells"></div>']
+       ]
+     : [
+        ['pitch', '프로젝트 제안', '넓은 화면에 또렷한 메시지', '<div class="paper-slide"><strong>새로운 가능성</strong><small>프로젝트 제안 · 워크스페이스</small></div>'],
+        ['weekly', '주간 성과 보고', '핵심 지표·성과·다음 주 계획', '<div class="paper-slide"><strong>주간 성과 보고</strong><small>핵심 지표 요약</small></div>'],
+        ['launch', '제품 런칭 덱', '다크 슬레이트 발표 테마', '<div class="paper-slide" style="background:#1e293b"><strong style="color:#f8fafc">제품 런칭</strong><small style="color:#94a3b8">Launch Keynote</small></div>']
+       ];
+   html += `<h2>새 ${app.noun}</h2><p class="subtitle">빈 작업에서 시작하거나 실무 템플릿을 골라보세요.</p><div class="template-grid">` +
     `<button class="template" data-template="blank"><div class="template-paper"><span class="blank-label">＋</span></div><b>빈 ${app.noun}</b><span class="description">내용을 자유롭게 구성</span></button>` +
-    `<button class="template" data-template="${second[0]}"><div class="template-paper">${second[3]}</div><b>${second[1]}</b><span class="description">${second[2]}</span></button>` +
+    templates.map(t => `<button class="template" data-template="${t[0]}"><div class="template-paper">${t[3]}</div><b>${t[1]}</b><span class="description">${t[2]}</span></button>`).join('') +
     `</div><div class="section-heading"><h3>최근 작업</h3><button class="text-button" data-start="open">다른 문서 열기</button></div>` +
-    recentList(info.recent.slice(0, 5));
+    recentList(filteredRecent.slice(0, 6));
   }
-  $('start-content').innerHTML = html;
+  const sc = $('start-content');
+  sc.classList.remove('ws-anim-page');
+  void sc.offsetWidth;
+  sc.classList.add('ws-anim-page');
+  sc.innerHTML = html;
+  if (window.PillNav) requestAnimationFrame(() => window.PillNav.refresh());
   updateHeader();
  }
 
  function recentList(items) {
   if (!items || !items.length) return '<div class="empty">최근에 연 문서가 없습니다.</div>';
   return `<div class="recent-list">${items.map(it =>
-   `<button class="recent-item" data-recent="${esc(it.path)}"><img src="assets/${esc(it.kind)}.png" alt=""><span class="recent-info"><b>${esc(it.name)}</b><small>${esc(it.path)}</small></span><span class="recent-date">${esc(it.time)}</span></button>`
+   `<div class="recent-row"><button class="recent-item" data-recent="${esc(it.path)}"><img src="assets/${esc(it.kind)}.png" alt=""><span class="recent-info"><b>${it.pinned ? '★ ' : ''}${esc(it.name)}</b><small>${esc(it.path)}</small></span><span class="recent-date">${esc(it.time)}</span></button><button class="recent-act${it.pinned ? ' pinned' : ''}" data-pin-recent="${esc(it.path)}" title="고정">${it.pinned ? '★' : '☆'}</button><button class="recent-act" data-del-recent="${esc(it.path)}" title="삭제">×</button></div>`
   ).join('')}</div>`;
  }
 
@@ -138,7 +165,7 @@
    }
   } else if (tab === 'insert') {
    if (kind === 'typing') {
-    html = group('삽입', toolBtn('그림', 'image', 'insertgraphic') + toolBtn('표', 'table', 'inserttable') + toolBtn('페이지 나누기', 'hr', 'insertpage', '', true) + toolBtn('링크', 'link', '', SVG.link));
+    html = group('삽입', toolBtn('그림', 'image', 'insertgraphic') + toolBtn('표', 'table', 'inserttable') + toolBtn('체크리스트', 'checklist', 'accepttrackedchange') + toolBtn('강조 박스', 'callout', 'insertdraw') + toolBtn('코드 블록', 'code', 'fontdialog') + toolBtn('오늘 날짜', 'date', 'inserttitlefield') + toolBtn('페이지 나누기', 'hr', 'insertpage', '', true) + toolBtn('링크', 'link', '', SVG.link));
    } else {
     html = group('삽입', toolBtn('텍스트 상자', 'addText', 'insertdraw', '', true) + toolBtn('도형', 'addShape', 'starshapes') + toolBtn('그림', 'image', 'insertgraphic') + toolBtn('개체 삭제', 'deleteItem', '', SVG.del));
    }
@@ -158,8 +185,13 @@
   } else if (tab === 'view') {
    html = group('보기', toolBtn('찾기', 'find', 'searchdialog') + toolBtn('PDF 내보내기', 'pdf', 'exportdirecttopdf', '', true) + toolBtn('인쇄', 'print', 'print'));
   }
-  $('ribbon').innerHTML = html;
-  $('ribbon').scrollLeft = 0;
+  const rb = $('ribbon');
+  rb.classList.remove('ws-anim-ribbon');
+  void rb.offsetWidth;
+  rb.classList.add('ws-anim-ribbon');
+  rb.innerHTML = html;
+  rb.scrollLeft = 0;
+  if (window.PillNav) requestAnimationFrame(() => window.PillNav.refresh());
  }
 
  function renderInspector() {
@@ -191,14 +223,25 @@
 
  function mountEditor() {
   $('start').hidden = true;
-  $('editor').hidden = false;
+  const ed = $('editor');
+  ed.hidden = false;
+  ed.classList.remove('ws-anim-page');
+  void ed.offsetWidth;
+  ed.classList.add('ws-anim-page');
   $('formula-bar').hidden = info.kind !== 'graphs';
   renderTabs();
   renderRibbon();
   renderInspector();
   const vp = $('viewport');
   const onChange = state => {
-   if (state.dirty) { docModified = true; updateHeader(); }
+   if (state.dirty) {
+    docModified = true;
+    updateHeader();
+    if (autoSaveEnabled && docPath) {
+     clearTimeout(autoSaveTimer);
+     autoSaveTimer = setTimeout(() => { if (editor && docModified && docPath) saveDoc(false, true); }, 4000);
+    }
+   }
    if (state.stats) $('document-stats').textContent = state.stats;
    if (state.headings && $('doc-outline')) {
     $('doc-outline').innerHTML = state.headings.length
@@ -239,7 +282,7 @@
   }
  }
 
- async function saveDoc(asNew = false) {
+ async function saveDoc(asNew = false, silent = false) {
   if (!editor) return false;
   try {
    const res = await call('saveFile', { path: docPath, as: asNew, imported: docImported, suggested: docTitle.replace(/\.[^.]+$/, ''), doc: editor.serialize() });
@@ -249,10 +292,10 @@
    docModified = false;
    docImported = false;
    updateHeader();
-   toast('저장했습니다.');
+   if (!silent) toast('저장했습니다.');
    return true;
   } catch (err) {
-   toast(err.message);
+   if (!silent) toast(err.message);
    return false;
   }
  }
@@ -305,6 +348,19 @@
    if (!$('find-bar').hidden) $('find-input').focus();
    return;
   }
+  if (action === 'focus') {
+   const on = !document.body.classList.contains('focus-mode');
+   document.body.classList.toggle('focus-mode', on);
+   if ($('exit-focus')) $('exit-focus').hidden = !on;
+   return;
+  }
+  if (action === 'share') {
+   if (!editor) return;
+   const ser = editor.serialize();
+   const txt = ser.text || (ser.slides ? ser.slides.map((s, idx) => `[슬라이드 ${idx + 1}]\n` + s.items.map(i => i.text || '').join('\n')).join('\n\n') : JSON.stringify(ser.sheets || '', null, 2));
+   await call('shareText', { title: docTitle, text: txt }).catch(() => {});
+   return;
+  }
   if (action === 'recover') {
    const rec = await call('loadRecovery');
    if (rec && rec.doc) {
@@ -328,6 +384,7 @@
    alignRight: info.kind === 'typing' ? ['justifyRight'] : ['align', 'right'],
    bullet: ['insertUnorderedList'], number: ['insertOrderedList'], link: ['link'],
    h1: ['h1'], h2: ['h2'], p: ['p'], table: ['table'], hr: ['hr'], hilite: ['hilite'], strike: ['strike'],
+   checklist: ['checklist'], callout: ['callout'], code: ['code'], date: ['date'],
    lh14: ['lineHeight', 1.4], lh175: ['lineHeight', 1.75], lh21: ['lineHeight', 2.1],
    currency: ['currency'], percent: ['percent'], autosum: ['autosum'],
    sortAsc: ['sortAsc'], sortDesc: ['sortDesc'], chart: ['chart'],
@@ -350,6 +407,51 @@
   if (btn.dataset.action) { await handleAction(btn.dataset.action); return; }
   if (btn.dataset.launch) { await call('launch', { kind: btn.dataset.launch }).catch(err => toast(err.message)); return; }
   if (btn.dataset.recent) { await openFile(btn.dataset.recent); return; }
+  if (btn.dataset.pinRecent) {
+   const res = await call('pinRecent', { path: btn.dataset.pinRecent }).catch(() => null);
+   if (res && res.recent) { info.recent = res.recent; renderStart(startSection); toast(res.pinned ? '상단에 고정했습니다.' : '고정을 해제했습니다.'); }
+   return;
+  }
+  if (btn.dataset.delRecent) {
+   const res = await call('deleteRecent', { path: btn.dataset.delRecent }).catch(() => null);
+   if (res && res.recent) { info.recent = res.recent; renderStart(startSection); toast('목록에서 삭제했습니다.'); }
+   return;
+  }
+  if (btn.id === 'exit-focus') { document.body.classList.remove('focus-mode'); btn.hidden = true; return; }
+  if (btn.id === 'start-search-fab') {
+   $('start-search-bar').hidden = false;
+   $('start-search-fab').hidden = true;
+   $('start-search-input').focus();
+   return;
+  }
+  if (btn.id === 'start-search-close') {
+   startQuery = '';
+   $('start-search-input').value = '';
+   $('start-search-bar').hidden = true;
+   $('start-search-fab').hidden = false;
+   renderStart(startSection);
+   return;
+  }
+  if (btn.id === 'open-settings') {
+   syncSettingsUi();
+   $('settings-dialog').showModal();
+   return;
+  }
+  if (btn.id === 'close-settings') { $('settings-dialog').close(); return; }
+  if (btn.dataset.themeVal) {
+   uiPref.theme = btn.dataset.themeVal;
+   window.__applyWorkspaceAppearance && window.__applyWorkspaceAppearance(uiPref);
+   call('setPref', { theme: uiPref.theme }).catch(() => {});
+   syncSettingsUi();
+   return;
+  }
+  if (btn.dataset.styleVal) {
+   uiPref.glassStyle = btn.dataset.styleVal;
+   window.__applyWorkspaceAppearance && window.__applyWorkspaceAppearance(uiPref);
+   call('setPref', { glassStyle: uiPref.glassStyle }).catch(() => {});
+   syncSettingsUi();
+   return;
+  }
   if (btn.dataset.template) { openNew(btn.dataset.template); return; }
   if (btn.dataset.tab) { tab = btn.dataset.tab; renderTabs(); renderRibbon(); return; }
   if (btn.dataset.start) { if (btn.dataset.start === 'open') await openFile(null); else renderStart(btn.dataset.start); return; }
@@ -427,9 +529,46 @@
 
  window.Workspace = { call, openNew, openFile, saveDoc, get info() { return info; }, get editor() { return editor; } };
 
+ function syncSettingsUi() {
+  document.querySelectorAll('[data-theme-val]').forEach(b => b.classList.toggle('active', b.dataset.themeVal === uiPref.theme));
+  document.querySelectorAll('[data-style-val]').forEach(b => b.classList.toggle('active', b.dataset.styleVal === uiPref.glassStyle));
+  const sl = $('set-glass-t'), vl = $('set-glass-val'), as = $('set-autosave');
+  if (sl) sl.value = String(Math.round((uiPref.glassT ?? 0.55) * 100));
+  if (vl) vl.textContent = Math.round((uiPref.glassT ?? 0.55) * 100) + '%';
+  if (as) as.checked = !!uiPref.autoSave;
+ }
+
+ if ($('start-search-input')) {
+  $('start-search-input').addEventListener('input', e => {
+   startQuery = e.target.value || '';
+   renderStart(startSection);
+  });
+ }
+ if ($('set-glass-t')) {
+  $('set-glass-t').addEventListener('input', e => {
+   uiPref.glassT = Number(e.target.value) / 100;
+   if ($('set-glass-val')) $('set-glass-val').textContent = e.target.value + '%';
+   window.__applyWorkspaceAppearance && window.__applyWorkspaceAppearance(uiPref);
+   call('setPref', { glassT: uiPref.glassT }).catch(() => {});
+  });
+ }
+ if ($('set-autosave')) {
+  $('set-autosave').addEventListener('change', e => {
+   uiPref.autoSave = !!e.target.checked;
+   autoSaveEnabled = uiPref.autoSave;
+   call('setPref', { autoSave: uiPref.autoSave }).catch(() => {});
+  });
+ }
+
  (async () => {
   try {
    info = await call('bootstrap');
+   const loadedPref = await call('getPrefs').catch(() => null);
+   if (loadedPref) {
+    uiPref = { ...uiPref, ...loadedPref };
+    autoSaveEnabled = uiPref.autoSave !== false;
+    window.__applyWorkspaceAppearance && window.__applyWorkspaceAppearance(uiPref);
+   }
    const app = APPS[info.kind] || APPS.workspace;
    document.title = info.name;
    $('app-name').textContent = info.name;

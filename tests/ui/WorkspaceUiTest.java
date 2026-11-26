@@ -113,6 +113,12 @@ public class WorkspaceUiTest {
         assertTrue(hwpxHtml.contains("#F0F9FF"));
         assertTrue(hwpxHtml.contains("text-align:center"));
         assertTrue(hwpxHtml.contains("font-weight:bold"));
+        // Verify default/unset black HWP shade/brush colors never emit black backgrounds
+        java.lang.reflect.Method c2h = HwpRich.class.getDeclaredMethod("colorRefToHex", int.class, boolean.class, boolean.class);
+        c2h.setAccessible(true);
+        assertNull(c2h.invoke(null, 0x00000000, true, true));
+        assertNull(c2h.invoke(null, 0xFFFFFFFF, true, true));
+        assertEquals("#E8F0FE", c2h.invoke(null, 0x00FEF0E8, true, true));
         String saved = OfficeCodec.saveLocal(ctx, "", "테스트보고서", "typing", typingDoc);
         JSONObject reloaded = OfficeCodec.readLocal(saved);
         assertTrue(reloaded.getString("html").contains("업무 보고서"));
@@ -141,7 +147,7 @@ public class WorkspaceUiTest {
         ActivityController<MainActivity> ctrl = Robolectric.buildActivity(MainActivity.class).setup();
         MainActivity act = ctrl.get();
         assertEquals("워크스페이스", act.getString(R.string.app_name));
-        assertEquals("9.5.4", MainActivity.VERSION);
+        assertEquals("9.5.5", MainActivity.VERSION);
         assertNotNull(act.web);
         // Back button inside a sub-app returns cleanly to workspace hub instead of killing app
         act.currentKind = "typing";

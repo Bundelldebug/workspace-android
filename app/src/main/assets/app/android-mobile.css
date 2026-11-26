@@ -87,12 +87,26 @@ html, body {
  color: var(--prism-text);
 }
 body {
+ display: flex;
+ flex-direction: column;
+ height: 100dvh;
  padding-top: var(--sat);
  padding-bottom: var(--sab);
- overflow-x: hidden;
+ overflow: hidden;
+}
+#start, #editor {
+ flex: 1 1 auto !important;
+ min-height: 0 !important;
+ height: auto !important;
 }
 .window-controls { display: none !important; }
-#titlebar { -webkit-app-region: no-drag; background: transparent !important; }
+#titlebar { -webkit-app-region: no-drag; background: transparent !important; flex-shrink: 0; }
+#document-title, .tool, .tab, .compact-tools button, .outline-item.lv-h2, #start-nav button {
+ color: var(--prism-text) !important;
+}
+#start-nav button:not(.selected), .tab:not(.active), .outline-item.lv-h2 {
+ color: var(--prism-text2) !important;
+}
 
 /* =========================================================================
    UNIVERSAL KYANT0 + IYINCHAO + MEILOX LIQUID GLASS SURFACES (ALL SCREENS)
@@ -347,44 +361,55 @@ body.focus-mode #editor { height: calc(100vh - var(--sat) - var(--sab)) !importa
  animation: wsGlassPop 0.24s var(--prism-spring);
 }
 
-/* Rich HWP / HWPX document styling inside editor page */
-.typing-page .hwp-doc { color: inherit; line-height: 1.6; }
-.typing-page .hwp-doc p { margin: 0 0 6px; }
-.typing-page .hwp-tbl { width: 100%; border-collapse: collapse; margin: 10px 0; table-layout: auto; }
-.typing-page .hwp-tbl td, .typing-page .hwp-tbl th { padding: 6px 8px; vertical-align: top; word-break: break-word; }
-.typing-page .hwp-box { padding: 10px 12px; margin: 8px 0; border-radius: 6px; }
-.typing-page .hwp-hf { padding: 6px 10px; margin: 4px 0 8px; border-bottom: 1px solid #d5dce6; background: rgba(148,163,184,0.10); font-size: 0.9em; color: #475569; }
+/* Rich HWP / HWPX document styling — ALWAYS crisp white paper with dark readable text even in Dark Mode */
+.typing-page {
+ background: #ffffff !important;
+ color: #1b2029 !important;
+}
+.typing-page .hwp-doc { color: #1b2029 !important; line-height: 1.65; }
+.typing-page .hwp-doc p { margin: 0 0 6px; color: inherit; }
+.typing-page .hwp-tbl { width: 100%; border-collapse: collapse; margin: 10px 0; table-layout: auto; background: #ffffff; }
+.typing-page .hwp-tbl td, .typing-page .hwp-tbl th { padding: 6px 8px; vertical-align: top; word-break: break-word; color: #1b2029; }
+.typing-page .hwp-box { padding: 10px 12px; margin: 8px 0; border-radius: 6px; color: #1b2029; }
+.typing-page .hwp-hf { padding: 6px 10px; margin: 4px 0 8px; border-bottom: 1px solid #d5dce6; background: #f8fafc; font-size: 0.9em; color: #475569; }
 .typing-page hr.pb { border: 0; border-top: 1px dashed #cbd5e1; margin: 16px 0; }
 .typing-page img { max-width: 100%; height: auto; border-radius: 4px; }
 .typing-page .ws-callout {
  padding: 12px 14px; margin: 10px 0; border-radius: 14px;
  border-left: 4px solid var(--accent, #3b73d1); background: rgba(59, 115, 209, 0.08);
+ color: #1b2029;
 }
 .typing-page pre.ws-code {
  padding: 12px 14px; border-radius: 12px; background: #141923; color: #e2e8f0;
  font-family: ui-monospace, monospace; font-size: 10pt; overflow-x: auto;
 }
 
-/* Smooth horizontal scrolling for ribbon & tabs without scrollbar clutter */
-#ribbon, #tabs {
+/* Smooth horizontal scrolling for ribbon, topbar & tabs without scrollbar clutter */
+#ribbon, #tabs, .topbar {
  overflow-x: auto !important;
  overflow-y: hidden !important;
  -webkit-overflow-scrolling: touch;
  scrollbar-width: none;
 }
-#ribbon::-webkit-scrollbar, #tabs::-webkit-scrollbar { display: none; }
+#ribbon::-webkit-scrollbar, #tabs::-webkit-scrollbar, .topbar::-webkit-scrollbar { display: none; }
 
 /* Zero-overlap protection for all widths */
 .topbar { min-width: 0; flex-wrap: nowrap; margin: 6px 14px 4px; border-radius: 999px !important; }
 #tabs { min-width: 0; flex: 1 1 auto; }
 .ribbon-group { flex: 0 0 auto !important; white-space: nowrap; }
-#focus-btn, #share-btn {
+#focus-btn, #share-btn, #toggle-ai, #toggle-inspector {
  height: 32px; padding: 0 11px; border-radius: 999px; font-size: 12px; font-weight: 600;
  background: var(--prism-card); border: 1px solid var(--prism-stroke); flex: none; white-space: nowrap;
+}
+#start:has(#start-search-bar:not([hidden])) #start-nav,
+#start:has(#start-search-bar:not([hidden])) #start-search-fab {
+ opacity: 0 !important;
+ pointer-events: none !important;
 }
 
 /* Tablet / foldable layout (640px+) */
 @media (min-width: 640px) {
+ #start-content { padding-bottom: 92px !important; }
  .start-sidebar {
   background: transparent !important;
   border-right: 0 !important;
@@ -548,18 +573,18 @@ body.focus-mode #editor { height: calc(100vh - var(--sat) - var(--sab)) !importa
   border-radius: 22px !important;
  }
 
- /* Phone Editor */
+ /* Phone Editor (zero overlap: horizontally scrollable pill topbar + safe find-bar) */
  #editor {
   background: transparent !important;
   display: flex !important;
   flex-direction: column !important;
-  height: calc(100vh - var(--sat) - var(--sab)) !important;
  }
  .topbar {
   margin: 6px 10px 4px !important;
-  padding: 5px 8px !important;
-  gap: 5px !important;
+  padding: 5px 10px !important;
+  gap: 6px !important;
   height: 46px !important;
+  justify-content: flex-start !important;
  }
  .quick-actions {
   display: flex !important;
@@ -570,11 +595,11 @@ body.focus-mode #editor { height: calc(100vh - var(--sat) - var(--sab)) !importa
   border: 0 !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
-  flex: none !important;
+  flex: 0 0 auto !important;
  }
  .quick-actions button { width: 32px !important; height: 32px !important; min-width: 32px !important; padding: 0 !important; }
  #tabs {
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
   gap: 2px !important;
   padding: 2px !important;
@@ -582,14 +607,28 @@ body.focus-mode #editor { height: calc(100vh - var(--sat) - var(--sab)) !importa
   border: 0 !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
  }
  #tabs .tab { padding: 6px 10px !important; font-size: 12px !important; font-weight: 600 !important; white-space: nowrap !important; flex: none !important; }
  #focus-btn, #share-btn, #toggle-ai, #toggle-inspector {
   height: 30px !important;
-  padding: 0 9px !important;
+  padding: 0 10px !important;
   font-size: 11.5px !important;
+  margin-left: 0 !important;
+  flex: 0 0 auto !important;
+ }
+ #find-bar {
+  left: 10px !important;
+  right: 10px !important;
+  top: calc(var(--sat) + 56px) !important;
+  max-width: calc(100vw - 20px) !important;
+  flex-wrap: wrap !important;
+ }
+ #find-bar input {
+  flex: 1 1 110px !important;
+  min-width: 0 !important;
+  width: auto !important;
  }
 
  #ribbon {

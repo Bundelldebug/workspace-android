@@ -157,7 +157,7 @@ final class HwpRich {
             cs.pt = Math.max(6f, Math.min(72f, parseInt(attr(cp, "height"), 1000) / 100f));
             cs.color = normHexColor(attr(cp, "textColor"), false);
             String shade = attr(cp, "shadeColor");
-            if (shade != null && !"none".equalsIgnoreCase(shade)) cs.bgColor = normHexColor(shade, true);
+            if (shade != null && !"none".equalsIgnoreCase(shade)) cs.bgColor = normHexColor(shade, true, true);
             cs.bold = kid(cp, "bold") != null;
             cs.italic = kid(cp, "italic") != null;
             Element ul = kid(cp, "underline");
@@ -201,12 +201,12 @@ final class HwpRich {
             Element fill = find(bf, "fillBrush");
             if (fill != null) {
                 Element wb = find(fill, "winBrush");
-                if (wb != null) bs.bgColor = normHexColor(attr(wb, "faceColor"), true);
+                if (wb != null) bs.bgColor = normHexColor(attr(wb, "faceColor"), true, true);
                 if (bs.bgColor == null) {
                     Element grad = find(fill, "gradation");
                     if (grad != null) {
                         Element col = find(grad, "color");
-                        if (col != null) bs.bgColor = normHexColor(attr(col, "value"), true);
+                        if (col != null) bs.bgColor = normHexColor(attr(col, "value"), true, true);
                     }
                 }
             }
@@ -344,7 +344,7 @@ final class HwpRich {
         Element fill = kid(box, "fillBrush");
         if (fill != null) {
             Element wb = find(fill, "winBrush");
-            if (wb != null) bg = normHexColor(attr(wb, "faceColor"), true);
+            if (wb != null) bg = normHexColor(attr(wb, "faceColor"), true, true);
         }
         Element ls = kid(box, "lineShape");
         if (ls != null && !"NONE".equalsIgnoreCase(attr(ls, "style"))) bd = normHexColor(attr(ls, "color"), false);
@@ -510,7 +510,7 @@ final class HwpRich {
             int flags = le32(fh, 36);
             boolean compressed = (flags & 1) != 0;
             if ((flags & 2) != 0) return "<p>(암호가 설정된 HWP 문서는 열 수 없습니다)</p>";
-            if ((flags & 4) != 0) return "<p>(배포용 HWP 문서는 열 수 없습니다)</p>";
+            boolean distribution = (flags & 4) != 0;
 
             HwpDocInfo info = new HwpDocInfo();
             byte[] docInfoRaw = cf.read("DocInfo");
@@ -522,15 +522,39 @@ final class HwpRich {
             StringBuilder sb = new StringBuilder("<div class=\"hwp-doc\">");
             int sec = 0;
             boolean hasContent = false;
+            String secPrefix = distribution ? "ViewText/Section" : "BodyText/Section";
             while (true) {
-                byte[] raw = cf.read("BodyText/Section" + sec);
+                byte[] raw = cf.read(secPrefix + sec);
                 if (raw == null) break;
                 if (sec > 0) sb.append("<hr class=\"pb\">");
                 sec++;
-                List<HwpRec> recs = parseHwpRecords(compressed ? inflateSafe(raw) : raw);
-                int before = sb.length();
-                renderHwpRange(recs, 0, recs.size(), 0, info, sb);
-                if (sb.length() > before) hasContent = true;
+                byte[] secBytes = distribution ? decryptHwpViewText(raw, compressed) : (compressed ? inflateSafe(raw) : raw);
+                if (secBytes != null && secBytes.length > 0) {
+                    List<HwpRec> recs = parseHwpRecords(secBytes);
+                    int before = sb.length();
+                    renderHwpRange(recs, 0, recs.size(), 0, info, sb);
+                    if (sb.length() > before) hasContent = true;
+                }
+            }
+            if (!hasContent) {
+                byte[] prvImg = cf.read("PrvImage");
+                if (prvImg != null && prvImg.length > 16) {
+                    String mime = detectImageMime(prvImg, "prv.png");
+                    if (mime != null) {
+                        sb.append("<img src=\"data:").append(mime).append(";base64,")
+                                .append(Base64.encodeToString(prvImg, Base64.NO_WRAP))
+                                .append("\" style=\"max-width:100%;height:auto;display:block;margin:8px auto;\">");
+                        hasContent = true;
+                    }
+                }
+                byte[] prvTxt = cf.read("PrvText");
+                if (prvTxt != null && prvTxt.length >= 2) {
+                    String txt = new String(prvTxt, StandardCharsets.UTF_16LE).trim();
+                    if (!txt.isEmpty()) {
+                        for (String line : txt.split("\\r?\\n")) sb.append("<p>").append(esc(line)).append("</p>");
+                        hasContent = true;
+                    }
+                }
             }
             for (Map.Entry<Integer, byte[]> e : info.binBytes.entrySet()) {
                 if (!info.usedBins.contains(e.getKey())) {
@@ -613,7 +637,7 @@ final class HwpRich {
                 }
                 bs.hasAnyBorder = vis > 0;
                 bs.borderColor = bc != null ? bc : "#9AA5B4";
-                if (d.length >= 44 && (le32(d, 32) & 1) != 0) bs.bgColor = colorRefToHex(le32(d, 36), true);
+                if (d.length >= 44 && (le32(d, 32) & 1) != 0) bs.bgColor = colorRefToHex(le32(d, 36), true, true);
                 info.borderFills.add(bs);
             } else if (r.tag == 0x15 && d.length >= 56) {
                 CharStyle cs = new CharStyle();
@@ -623,10 +647,13 @@ final class HwpRich {
                 cs.bold = (attr & 2) != 0;
                 cs.underline = ((attr >>> 2) & 3) != 0;
                 cs.strike = ((attr >>> 18) & 7) != 0;
-                cs.color = colorRefToHex(le32(d, 52), false);
-                if (d.length >= 60) {
-                    int shade = le32(d, 56);
-                    if (shade != -1 && (shade & 0xFFFFFF) != 0xFFFFFF) cs.bgColor = colorRefToHex(shade, true);
+                cs.color = colorRefToHex(le32(d, 52), false, false);
+                // Offset 56 is underlineColor (defaults to 0x00000000 black!); offset 60 is shadeColor (0xFFFFFFFF = none)
+                if (d.length >= 64) {
+                    int shade = le32(d, 60);
+                    if (shade != -1 && shade != 0 && (shade & 0xFFFFFF) != 0xFFFFFF && (shade & 0xFFFFFF) != 0) {
+                        cs.bgColor = colorRefToHex(shade, true, true);
+                    }
                 }
                 info.charShapes.add(cs);
             } else if (r.tag == 0x19 && d.length >= 4) {
@@ -998,14 +1025,61 @@ final class HwpRich {
         return out;
     }
 
+    private static byte[] decryptHwpViewText(byte[] raw, boolean compressed) {
+        if (raw == null || raw.length < 260) return null;
+        try {
+            long h = le32(raw, 0) & 0xFFFFFFFFL;
+            int tag = (int) (h & 0x3FF);
+            int size = (int) (h >>> 20);
+            int off = 4;
+            if (size == 0xFFF) { size = le32(raw, 4); off = 8; }
+            if (tag != 0x1C || size < 256 || off + size > raw.length) return null;
+            byte[] block = Arrays.copyOfRange(raw, off, off + 256);
+            int[] seed = new int[]{le32(block, 0)};
+            int idx = (seed[0] & 0x0F) + 4;
+            int c = 0, val = 0;
+            for (int i = 0; i < 256; i++) {
+                if (c == 0) {
+                    val = hwpRand(seed) & 0xFF;
+                    c = (hwpRand(seed) & 0x0F) + 1;
+                }
+                if (i >= 4) block[i] = (byte) ((block[i] & 0xFF) ^ val);
+                c--;
+            }
+            byte[] key = Arrays.copyOfRange(block, idx, idx + 16);
+            int encStart = off + size;
+            int encLen = ((raw.length - encStart) / 16) * 16;
+            if (encLen <= 0) return null;
+            javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance("AES/ECB/NoPadding");
+            cipher.init(javax.crypto.Cipher.DECRYPT_MODE, new javax.crypto.spec.SecretKeySpec(key, "AES"));
+            byte[] dec = cipher.doFinal(raw, encStart, encLen);
+            return compressed ? inflateSafe(dec) : dec;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static int hwpRand(int[] seed) {
+        seed[0] = (seed[0] * 214013 + 2531011);
+        return (seed[0] >>> 16) & 0x7FFF;
+    }
+
     private static String normHexColor(String s, boolean skipWhite) {
+        return normHexColor(s, skipWhite, false);
+    }
+
+    private static String normHexColor(String s, boolean skipWhite, boolean skipDefaultBlack) {
         if (s == null) return null;
         s = s.trim();
         if (s.isEmpty() || "none".equalsIgnoreCase(s)) return null;
         if (s.startsWith("#")) s = s.substring(1);
-        if (s.length() == 8) s = s.substring(2);
+        if (s.length() == 8) {
+            if (s.startsWith("00")) return null;
+            s = s.substring(2);
+        }
         if (s.length() != 6) return null;
         if (skipWhite && "FFFFFF".equalsIgnoreCase(s)) return null;
+        if (skipDefaultBlack && "000000".equalsIgnoreCase(s)) return null;
         for (int i = 0; i < 6; i++) {
             char c = s.charAt(i);
             if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) return null;
@@ -1014,9 +1088,15 @@ final class HwpRich {
     }
 
     private static String colorRefToHex(int c, boolean skipWhite) {
+        return colorRefToHex(c, skipWhite, false);
+    }
+
+    private static String colorRefToHex(int c, boolean skipWhite, boolean skipDefaultBlack) {
         if (c == -1) return null;
+        if (skipDefaultBlack && (c == 0 || (c & 0xFFFFFF) == 0)) return null;
         int r = c & 0xFF, g = (c >>> 8) & 0xFF, b = (c >>> 16) & 0xFF;
         if (skipWhite && r >= 252 && g >= 252 && b >= 252) return null;
+        if (skipDefaultBlack && r <= 8 && g <= 8 && b <= 8) return null;
         return String.format(Locale.ROOT, "#%02X%02X%02X", r, g, b);
     }
 

@@ -1,79 +1,70 @@
-/* Kyant0 + iyinchao + MeiloX Optical Liquid Glass UI + Full Screen-Recording Motion */
+/* Prism-Unified Optical Liquid Glass UI + Full Screen-Recording Motion (Zero AI Slop) */
 :root {
  --sat: 0px;
  --sab: 0px;
- --glass-t: 0.55;
- --lg-blur: 28px;
- --prism-bg: #eef2f9;
- --prism-mesh: radial-gradient(92% 70% at 14% 8%, rgba(84, 146, 255, 0.20) 0%, transparent 56%),
-               radial-gradient(78% 64% at 88% 18%, rgba(124, 96, 255, 0.16) 0%, transparent 58%),
-               radial-gradient(84% 72% at 50% 94%, rgba(38, 198, 170, 0.14) 0%, transparent 62%),
-               linear-gradient(180deg, #f3f6fc 0%, #eaf0f8 100%);
- --prism-card: rgba(255, 255, 255, 0.72);
+ --glass-t: 0.5;
+ --lg-blur: 18px;
+ --prism-bg: #f2f2f7;
+ --prism-mesh: #f2f2f7;
+ --prism-card: #ffffff;
  --prism-card-solid: #ffffff;
- --prism-glass: rgba(255, 255, 255, calc(0.84 - var(--glass-t) * 0.34));
- --prism-glass-strong: rgba(255, 255, 255, calc(0.90 - var(--glass-t) * 0.26));
- --prism-lens: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(232, 242, 255, 0.68));
- --prism-stroke: rgba(15, 23, 42, 0.09);
- --prism-hi: rgba(255, 255, 255, 0.94);
- --prism-rim-45: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.16) 44%, rgba(120,185,255,0.34) 76%, rgba(255,255,255,0.74) 100%);
+ --prism-glass: rgba(250, 250, 252, calc(0.96 - var(--glass-t) * 0.60));
+ --prism-glass-strong: rgba(250, 250, 252, calc(0.96 - var(--glass-t) * 0.44));
+ --prism-lens: rgba(255, 255, 255, 0.90);
+ --prism-stroke: rgba(0, 0, 0, 0.14);
+ --prism-hi: rgba(255, 255, 255, 0.88);
+ --prism-rim-45: linear-gradient(153deg, rgba(255,255,255,0.68) 0%, rgba(255,255,255,0.08) 48%, rgba(255,255,255,0.32) 100%);
  --prism-accent: #387aff;
  --prism-accent-soft: rgba(56, 122, 255, 0.14);
- --prism-text: #111318;
- --prism-text2: #5f6878;
+ --prism-text: #000000;
+ --prism-text2: rgba(60, 60, 67, 0.60);
  --prism-spring: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-color-scheme: dark) {
  :root:not([data-theme="light"]) {
-  --prism-bg: #0c0f16;
-  --prism-mesh: radial-gradient(88% 66% at 14% 8%, rgba(62, 122, 255, 0.22) 0%, transparent 56%),
-                radial-gradient(76% 62% at 88% 18%, rgba(132, 92, 255, 0.18) 0%, transparent 58%),
-                radial-gradient(84% 70% at 50% 94%, rgba(24, 178, 152, 0.14) 0%, transparent 62%),
-                linear-gradient(180deg, #0d1018 0%, #090c12 100%);
-  --prism-card: rgba(24, 29, 40, 0.72);
-  --prism-card-solid: #191d27;
-  --prism-glass: rgba(22, 27, 38, calc(0.84 - var(--glass-t) * 0.34));
-  --prism-glass-strong: rgba(24, 29, 42, calc(0.90 - var(--glass-t) * 0.26));
-  --prism-lens: linear-gradient(145deg, rgba(255, 255, 255, 0.20), rgba(110, 170, 255, 0.14));
-  --prism-stroke: rgba(255, 255, 255, 0.14);
-  --prism-hi: rgba(255, 255, 255, 0.28);
-  --prism-rim-45: linear-gradient(135deg, rgba(255,255,255,0.44) 0%, rgba(255,255,255,0.05) 45%, rgba(110,180,255,0.28) 76%, rgba(255,255,255,0.34) 100%);
-  --prism-text: #f3f6fb;
-  --prism-text2: #9ba5b8;
-  --bg: #0c0f16;
-  --surface: #181c26;
-  --surface-2: #242a38;
-  --ink: #f3f6fb;
-  --muted: #9ba5b8;
-  --line: rgba(255, 255, 255, 0.10);
-  --soft: rgba(66, 122, 210, 0.20);
+  --prism-bg: #000000;
+  --prism-mesh: #000000;
+  --prism-card: #1c1c1e;
+  --prism-card-solid: #1c1c1e;
+  --prism-glass: rgba(28, 28, 30, calc(0.96 - var(--glass-t) * 0.62));
+  --prism-glass-strong: rgba(28, 28, 30, calc(0.96 - var(--glass-t) * 0.48));
+  --prism-lens: rgba(255, 255, 255, 0.16);
+  --prism-stroke: rgba(255, 255, 255, 0.20);
+  --prism-hi: rgba(255, 255, 255, 0.24);
+  --prism-rim-45: linear-gradient(153deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.04) 48%, rgba(255,255,255,0.18) 100%);
+  --prism-text: #ffffff;
+  --prism-text2: rgba(235, 235, 245, 0.60);
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --ink: #ffffff;
+  --muted: rgba(235, 235, 245, 0.60);
+  --line: rgba(255, 255, 255, 0.12);
+  --soft: rgba(56, 122, 255, 0.20);
  }
 }
 
 :root[data-theme="dark"] {
- --prism-bg: #0c0f16;
- --prism-mesh: radial-gradient(88% 66% at 14% 8%, rgba(62, 122, 255, 0.22) 0%, transparent 56%),
-               radial-gradient(76% 62% at 88% 18%, rgba(132, 92, 255, 0.18) 0%, transparent 58%),
-               radial-gradient(84% 70% at 50% 94%, rgba(24, 178, 152, 0.14) 0%, transparent 62%),
-               linear-gradient(180deg, #0d1018 0%, #090c12 100%);
- --prism-card: rgba(24, 29, 40, 0.72);
- --prism-card-solid: #191d27;
- --prism-glass: rgba(22, 27, 38, calc(0.84 - var(--glass-t) * 0.34));
- --prism-glass-strong: rgba(24, 29, 42, calc(0.90 - var(--glass-t) * 0.26));
- --prism-lens: linear-gradient(145deg, rgba(255, 255, 255, 0.20), rgba(110, 170, 255, 0.14));
- --prism-stroke: rgba(255, 255, 255, 0.14);
- --prism-hi: rgba(255, 255, 255, 0.28);
- --prism-rim-45: linear-gradient(135deg, rgba(255,255,255,0.44) 0%, rgba(255,255,255,0.05) 45%, rgba(110,180,255,0.28) 76%, rgba(255,255,255,0.34) 100%);
- --prism-text: #f3f6fb;
- --prism-text2: #9ba5b8;
- --bg: #0c0f16;
- --surface: #181c26;
- --surface-2: #242a38;
- --ink: #f3f6fb;
- --muted: #9ba5b8;
- --line: rgba(255, 255, 255, 0.10);
- --soft: rgba(66, 122, 210, 0.20);
+ --prism-bg: #000000;
+ --prism-mesh: #000000;
+ --prism-card: #1c1c1e;
+ --prism-card-solid: #1c1c1e;
+ --prism-glass: rgba(28, 28, 30, calc(0.96 - var(--glass-t) * 0.62));
+ --prism-glass-strong: rgba(28, 28, 30, calc(0.96 - var(--glass-t) * 0.48));
+ --prism-lens: rgba(255, 255, 255, 0.16);
+ --prism-stroke: rgba(255, 255, 255, 0.20);
+ --prism-hi: rgba(255, 255, 255, 0.24);
+ --prism-rim-45: linear-gradient(153deg, rgba(255,255,255,0.36) 0%, rgba(255,255,255,0.04) 48%, rgba(255,255,255,0.18) 100%);
+ --prism-text: #ffffff;
+ --prism-text2: rgba(235, 235, 245, 0.60);
+ --bg: #000000;
+ --surface: #1c1c1e;
+ --surface-2: #2c2c2e;
+ --ink: #ffffff;
+ --muted: rgba(235, 235, 245, 0.60);
+ --line: rgba(255, 255, 255, 0.12);
+ --soft: rgba(56, 122, 255, 0.20);
 }
 
 :root[data-glass-style="blur"] {
@@ -116,24 +107,20 @@ body:has(#start:not([hidden])) #titlebar { display: none !important; }
 #formula-bar, #toast, #about-dialog, #settings-dialog, #find-bar,
 .quick-actions, .rail, #tabs, #start-search-fab, #start-search-bar, #exit-focus {
  position: relative;
- backdrop-filter: blur(var(--lg-blur)) saturate(210%) contrast(1.05) !important;
- -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(210%) contrast(1.05) !important;
+ backdrop-filter: blur(var(--lg-blur)) saturate(135%) !important;
+ -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(135%) !important;
  background: var(--prism-glass) !important;
- border: 1px solid var(--prism-stroke) !important;
- box-shadow: 0 12px 34px rgba(15, 23, 42, 0.10),
-             0 2px 8px rgba(15, 23, 42, 0.05),
-             inset 0 1.2px 0 var(--prism-hi),
-             inset 0 -1.5px 6px rgba(15, 23, 42, 0.05),
-             inset 1px 0 0 rgba(255, 255, 255, 0.42) !important;
+ border: 0.75px solid var(--prism-stroke) !important;
+ box-shadow: 0 8px 26px rgba(0, 0, 0, 0.12),
+             0 2px 6px rgba(0, 0, 0, 0.05),
+             inset 0 1px 0 var(--prism-hi) !important;
  isolation: isolate;
 }
 
 .app-card, .template-paper, .recent-item, .recovery-banner {
- backdrop-filter: blur(20px) saturate(185%) !important;
- -webkit-backdrop-filter: blur(20px) saturate(185%) !important;
  background: var(--prism-card) !important;
- border: 1px solid var(--prism-stroke) !important;
- box-shadow: 0 6px 22px rgba(15, 23, 42, 0.06), inset 0 1px 0 var(--prism-hi) !important;
+ border: 0.75px solid var(--prism-stroke) !important;
+ box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* 45-degree Optical Fresnel Specular Rim */

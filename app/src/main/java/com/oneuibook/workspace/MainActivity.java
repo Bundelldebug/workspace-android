@@ -31,7 +31,7 @@ import java.io.OutputStream;
  * 아이콘·UI·리본·서식 패널·편집기(타이핑/그래프즈/프레젠트)를 WebView + AndroidHost 브리지로 그대로 이식.
  */
 public final class MainActivity extends Activity {
-    static final String VERSION = "9.5.6";
+    static final String VERSION = "9.5.7";
     private static final int REQ_OPEN = 5001, REQ_SAVE_AS = 5002, REQ_IMAGE = 5003;
 
     WebView web;
@@ -100,7 +100,7 @@ public final class MainActivity extends Activity {
         boolean isSysDark = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
                 == android.content.res.Configuration.UI_MODE_NIGHT_YES;
         boolean dark = "dark".equals(theme) || ("system".equals(theme) && isSysDark);
-        if (web != null) web.setBackgroundColor(dark ? 0xFF0C0F16 : 0xFFF3F6FC);
+        if (web != null) web.setBackgroundColor(dark ? 0xFF000000 : 0xFFF2F2F7);
         WindowInsetsController ctrl = getWindow().getInsetsController();
         if (ctrl != null) {
             int mask = WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;

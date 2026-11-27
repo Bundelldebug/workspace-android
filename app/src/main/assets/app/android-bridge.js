@@ -41,7 +41,8 @@
   if (typeof pref.glassT === 'number') {
    const t = Math.max(0, Math.min(1, pref.glassT));
    root.style.setProperty('--glass-t', String(t));
-   root.style.setProperty('--lg-blur', Math.round(18 + t * 18) + 'px');
+   const blurPx = t >= 0.5 ? Math.round(18 - (t - 0.5) * 24) : 18;
+   root.style.setProperty('--lg-blur', blurPx + 'px');
   }
   root.setAttribute('data-glass-style', pref.glassStyle === 'blur' ? 'blur' : 'prism');
  };

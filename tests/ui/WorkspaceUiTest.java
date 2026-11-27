@@ -120,7 +120,7 @@ public class WorkspaceUiTest {
         assertNull(c2h.invoke(null, 0xFFFFFFFF, true, true));
         assertEquals("#E8F0FE", c2h.invoke(null, 0x00FEF0E8, true, true));
         String saved = OfficeCodec.saveLocal(ctx, "", "테스트보고서", "typing", typingDoc);
-        JSONObject reloaded = OfficeCodec.readLocal(saved);
+        JSONObject reloaded = OfficeCodec.readLocal(ctx, saved);
         assertTrue(reloaded.getString("html").contains("업무 보고서"));
         assertTrue(OfficeCodec.localAiAssist("bullets", "첫째 줄\n둘째 줄").contains("• 첫째 줄"));
         assertTrue(OfficeCodec.togglePinRecent(ctx, saved));
@@ -147,7 +147,7 @@ public class WorkspaceUiTest {
         ActivityController<MainActivity> ctrl = Robolectric.buildActivity(MainActivity.class).setup();
         MainActivity act = ctrl.get();
         assertEquals("워크스페이스", act.getString(R.string.app_name));
-        assertEquals("9.5.7", MainActivity.VERSION);
+        assertEquals("9.5.8", MainActivity.VERSION);
         assertNotNull(act.web);
         // Verify mobile CSS strictly guards hidden elements so #editor/#inspector never leak on Start screen
         try (java.io.InputStream cssIn = act.getAssets().open("app/android-mobile.css")) {
@@ -169,5 +169,52 @@ public class WorkspaceUiTest {
         assertNotNull(act.getAssets().open("app/assets/typing.png"));
         assertNotNull(act.getAssets().open("app/assets/graphs.png"));
         assertNotNull(act.getAssets().open("app/assets/present.png"));
+    }
+
+    @Test public void securityHardeningChecks() throws Exception {
+        Context ctx = RuntimeEnvironment.getApplication();
+
+        // 1. Virtual HTTPS asset path resolution blocks traversal
+        assertEquals("index.html", MainActivity.resolveAssetPath("/"));
+        assertEquals("assets/typing.png", MainActivity.resolveAssetPath("/assets/typing.png"));
+        assertNull(MainActivity.resolveAssetPath("/../shared_prefs/workspace_android.xml"));
+        assertNull(MainActivity.resolveAssetPath("/assets/../../secret"));
+
+        // 2. OfficeCodec confines local file reads strictly inside workspace_docs
+        File outside = new File(ctx.getFilesDir(), "outside.txt");
+        try (FileOutputStream fos = new FileOutputStream(outside)) { fos.write("secret".getBytes(StandardCharsets.UTF_8)); }
+        assertFalse(OfficeCodec.isInsideDocsDir(ctx, outside));
+        assertFalse(OfficeCodec.isInsideDocsDir(ctx, new File(OfficeCodec.docsDir(ctx), "../outside.txt")));
+        try {
+            OfficeCodec.readLocal(ctx, outside.getAbsolutePath());
+            fail("readLocal outside workspace_docs must throw SecurityException");
+        } catch (SecurityException expected) {}
+        outside.delete();
+
+        // 3. HTML sanitizer strips script/event handlers/javascript: URLs
+        String dirty = "<p onclick=\"alert(1)\">Hello</p><script>AndroidHost.postMessage('{}')</script><a href=\"javascript:evil()\">x</a>";
+        String clean = OfficeCodec.sanitizeHtml(dirty);
+        assertFalse(clean.toLowerCase().contains("<script"));
+        assertFalse(clean.toLowerCase().contains("onclick"));
+        assertFalse(clean.toLowerCase().contains("javascript:"));
+        assertTrue(clean.contains("Hello"));
+
+        // 4. XXE in DOCX XML is rejected
+        ByteArrayOutputStream xxeDocx = new ByteArrayOutputStream();
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(xxeDocx)) {
+            zos.putNextEntry(new java.util.zip.ZipEntry("word/document.xml"));
+            zos.write("<?xml version=\"1.0\"?><!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/passwd\">]><w:doc>&e;</w:doc>".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+        try {
+            OfficeCodec.importDocx(xxeDocx.toByteArray());
+            fail("XXE DOCTYPE in DOCX must be rejected");
+        } catch (Exception expected) {}
+
+        // 5. Updater URL allowlist
+        assertTrue(Updater.isTrustedReleaseUrl("https://github.com/Bundelldebug/workspace-android/releases/download/v9.5.8/Workspace_Android.apk"));
+        assertTrue(Updater.isTrustedReleaseUrl("https://objects.githubusercontent.com/release/Workspace_Android.apk"));
+        assertFalse(Updater.isTrustedReleaseUrl("http://github.com/Bundelldebug/workspace-android/releases/download/v9.5.8/Workspace_Android.apk"));
+        assertFalse(Updater.isTrustedReleaseUrl("https://evil.example.com/Workspace_Android.apk"));
     }
 }

@@ -74,12 +74,19 @@ final class HwpRich {
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
             ZipEntry ze;
             byte[] buf = new byte[16384];
+            int entries = 0;
+            long totalBytes = 0;
             while ((ze = zis.getNextEntry()) != null) {
+                if (++entries > 1000) break;
                 if (ze.isDirectory()) continue;
                 String name = ze.getName().replace('\\', '/');
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 int n;
-                while ((n = zis.read(buf)) > 0 && bos.size() < 20 * 1024 * 1024) bos.write(buf, 0, n);
+                while ((n = zis.read(buf)) > 0 && bos.size() < 16 * 1024 * 1024 && totalBytes < 32L * 1024 * 1024) {
+                    bos.write(buf, 0, n);
+                    totalBytes += n;
+                }
+                if (totalBytes >= 32L * 1024 * 1024) break;
                 st.entries.put(name, bos.toByteArray());
                 String nl = name.toLowerCase(Locale.ROOT);
                 st.entriesLower.put(nl, name);
@@ -943,7 +950,12 @@ final class HwpRich {
         try {
             DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
             f.setNamespaceAware(true);
+            f.setExpandEntityReferences(false);
             try { f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); } catch (Throwable ignored) {}
+            try { f.setFeature("http://xml.org/sax/features/external-general-entities", false); } catch (Throwable ignored) {}
+            try { f.setFeature("http://xml.org/sax/features/external-parameter-entities", false); } catch (Throwable ignored) {}
+            try { f.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false); } catch (Throwable ignored) {}
+            try { f.setXIncludeAware(false); } catch (Throwable ignored) {}
             DocumentBuilder db = f.newDocumentBuilder();
             return db.parse(new ByteArrayInputStream(b));
         } catch (Throwable t) {

@@ -31,7 +31,8 @@ import java.io.OutputStream;
  * 아이콘·UI·리본·서식 패널·편집기(타이핑/그래프즈/프레젠트)를 WebView + AndroidHost 브리지로 그대로 이식.
  */
 public final class MainActivity extends Activity {
-    static final String VERSION = "9.5.7";
+    static final String VERSION = "9.5.8";
+    static final String ASSET_ORIGIN = "https://appassets.workspace.local";
     private static final int REQ_OPEN = 5001, REQ_SAVE_AS = 5002, REQ_IMAGE = 5003;
 
     WebView web;
@@ -55,9 +56,12 @@ public final class MainActivity extends Activity {
         WebSettings ws = web.getSettings();
         ws.setJavaScriptEnabled(true);
         ws.setDomStorageEnabled(true);
-        ws.setAllowFileAccess(true);
-        ws.setAllowFileAccessFromFileURLs(true);
-        ws.setAllowUniversalAccessFromFileURLs(true);
+        ws.setAllowFileAccess(false);
+        ws.setAllowContentAccess(false);
+        ws.setAllowFileAccessFromFileURLs(false);
+        ws.setAllowUniversalAccessFromFileURLs(false);
+        ws.setSaveFormData(false);
+        ws.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         ws.setBuiltInZoomControls(false);
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             ws.setAlgorithmicDarkeningAllowed(false);
@@ -65,6 +69,27 @@ public final class MainActivity extends Activity {
         web.setBackgroundColor(0xFFF4F6FA);
         web.addJavascriptInterface(new HostBridge(), "AndroidHost");
         web.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest req) {
+                String u = req != null && req.getUrl() != null ? req.getUrl().toString() : null;
+                return u == null || !u.startsWith(ASSET_ORIGIN + "/");
+            }
+            @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, android.webkit.WebResourceRequest req) {
+                Uri u = req != null ? req.getUrl() : null;
+                if (u != null && "https".equalsIgnoreCase(u.getScheme()) && "appassets.workspace.local".equalsIgnoreCase(u.getHost())) {
+                    String rel = resolveAssetPath(u.getPath());
+                    if (rel != null) {
+                        try {
+                            InputStream is = getAssets().open("app/" + rel);
+                            return new android.webkit.WebResourceResponse(mimeForAsset(rel), "utf-8", is);
+                        } catch (Exception ignored) {}
+                    }
+                    return new android.webkit.WebResourceResponse("text/plain", "utf-8", 404, "Not Found",
+                            java.util.Collections.emptyMap(), new java.io.ByteArrayInputStream(new byte[0]));
+                }
+                // Block all external network/file subresource loads inside the offline document editor
+                return new android.webkit.WebResourceResponse("text/plain", "utf-8", 403, "Forbidden",
+                        java.util.Collections.emptyMap(), new java.io.ByteArrayInputStream(new byte[0]));
+            }
             @Override public void onPageFinished(WebView view, String url) {
                 if (url != null) {
                     Uri u = Uri.parse(url);
@@ -92,8 +117,43 @@ public final class MainActivity extends Activity {
         setContentView(root);
         applySystemBarAppearance(OfficeCodec.prefs(this).getString("ui_theme", "system"));
         handleIncomingIntent(getIntent(), false);
-        web.loadUrl("file:///android_asset/app/index.html?kind=" + currentKind);
+        web.loadUrl(ASSET_ORIGIN + "/index.html?kind=" + Uri.encode(currentKind));
         Updater.autoCheck(this);
+    }
+
+    /** Safely normalizes virtual HTTPS asset paths under assets/app/, rejecting traversal attempts. */
+    static String resolveAssetPath(String rawPath) {
+        if (rawPath == null || rawPath.isEmpty() || "/".equals(rawPath)) return "index.html";
+        String p = rawPath.startsWith("/") ? rawPath.substring(1) : rawPath;
+        if (p.contains("\\") || p.contains("\0")) return null;
+        String[] segs = p.split("/");
+        java.util.List<String> clean = new java.util.ArrayList<>();
+        for (String s : segs) {
+            if (s.isEmpty() || ".".equals(s)) continue;
+            if ("..".equals(s)) return null;
+            clean.add(s);
+        }
+        if (clean.isEmpty()) return "index.html";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < clean.size(); i++) {
+            if (i > 0) sb.append('/');
+            sb.append(clean.get(i));
+        }
+        return sb.toString();
+    }
+
+    private static String mimeForAsset(String rel) {
+        String l = rel.toLowerCase(java.util.Locale.ROOT);
+        if (l.endsWith(".html") || l.endsWith(".htm")) return "text/html";
+        if (l.endsWith(".js") || l.endsWith(".mjs")) return "application/javascript";
+        if (l.endsWith(".css")) return "text/css";
+        if (l.endsWith(".svg")) return "image/svg+xml";
+        if (l.endsWith(".png")) return "image/png";
+        if (l.endsWith(".jpg") || l.endsWith(".jpeg")) return "image/jpeg";
+        if (l.endsWith(".webp")) return "image/webp";
+        if (l.endsWith(".json")) return "application/json";
+        if (l.endsWith(".woff2")) return "font/woff2";
+        return "application/octet-stream";
     }
 
     private void applySystemBarAppearance(String theme) {
@@ -117,7 +177,7 @@ public final class MainActivity extends Activity {
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         if (handleIncomingIntent(intent, true)) {
-            web.loadUrl("file:///android_asset/app/index.html?kind=" + currentKind);
+            web.loadUrl(ASSET_ORIGIN + "/index.html?kind=" + Uri.encode(currentKind));
         }
     }
 
@@ -223,7 +283,7 @@ public final class MainActivity extends Activity {
         if ("robolectric".equalsIgnoreCase(android.os.Build.FINGERPRINT) || web == null) {
             if (!"workspace".equals(currentKind)) {
                 currentKind = "workspace";
-                if (web != null) web.loadUrl("file:///android_asset/app/index.html?kind=workspace");
+                if (web != null) web.loadUrl(ASSET_ORIGIN + "/index.html?kind=workspace");
                 return;
             }
             super.onBackPressed();
@@ -234,7 +294,7 @@ public final class MainActivity extends Activity {
             if ("handled".equals(res)) return;
             if (!"workspace".equals(currentKind)) {
                 currentKind = "workspace";
-                web.loadUrl("file:///android_asset/app/index.html?kind=workspace");
+                web.loadUrl(ASSET_ORIGIN + "/index.html?kind=workspace");
                 return;
             }
             finish();
@@ -276,7 +336,7 @@ public final class MainActivity extends Activity {
                     }
                     case "readFile": {
                         String path = args.optString("path", "");
-                        JSONObject doc = OfficeCodec.readLocal(path);
+                        JSONObject doc = OfficeCodec.readLocal(MainActivity.this, path);
                         reply(id, true, doc, null);
                         break;
                     }

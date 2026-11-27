@@ -49,6 +49,30 @@ final class OfficeCodec {
         return d;
     }
 
+    /** Strictly confines local file operations to workspace_docs via canonical path check. */
+    static boolean isInsideDocsDir(Context c, File f) {
+        if (c == null || f == null) return false;
+        try {
+            String base = docsDir(c).getCanonicalPath();
+            String target = f.getCanonicalPath();
+            return target.startsWith(base + File.separator);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Sanitizes imported document HTML to neutralize script execution inside the WebView editor. */
+    static String sanitizeHtml(String html) {
+        if (html == null || html.isEmpty()) return "";
+        String s = html;
+        s = s.replaceAll("(?is)<(script|iframe|object|embed|applet|base|meta|link|form)\\b[^>]*>.*?</\\1>", "");
+        s = s.replaceAll("(?is)<(script|iframe|object|embed|applet|base|meta|link|form)\\b[^>]*/?>", "");
+        s = s.replaceAll("(?i)\\son[a-z]+\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s>]+)", "");
+        s = s.replaceAll("(?i)(href|src|action|formaction)\\s*=\\s*\"\\s*(javascript|vbscript|data\\s*:\\s*text/html)[^\"]*\"", "$1=\"#\"");
+        s = s.replaceAll("(?i)(href|src|action|formaction)\\s*=\\s*'\\s*(javascript|vbscript|data\\s*:\\s*text/html)[^']*'", "$1='#'");
+        return s;
+    }
+
     static JSONArray getRecent(Context c, String filterKind) {
         JSONArray out = new JSONArray();
         try {
@@ -93,9 +117,12 @@ final class OfficeCodec {
                 if (!path.equals(it.optString("path"))) next.put(it);
             }
             prefs(c).edit().putString("recent_docs", next.toString()).apply();
-            if (path != null && path.startsWith(docsDir(c).getAbsolutePath())) {
-                new File(path).delete();
-                new File(path + ".owjson").delete();
+            if (path != null && !path.isEmpty()) {
+                File f = new File(path);
+                if (isInsideDocsDir(c, f)) {
+                    f.delete();
+                    new File(f.getCanonicalPath() + ".owjson").delete();
+                }
             }
         } catch (Exception ignored) {}
     }
@@ -122,8 +149,8 @@ final class OfficeCodec {
     static String saveLocal(Context c, String existingPath, String suggested, String kind, JSONObject doc) throws Exception {
         String ext = "graphs".equals(kind) ? ".xlsx" : ("present".equals(kind) ? ".pptx" : ".docx");
         File f;
-        if (existingPath != null && !existingPath.isEmpty() && existingPath.startsWith(docsDir(c).getAbsolutePath())) {
-            f = new File(existingPath);
+        if (existingPath != null && !existingPath.isEmpty() && isInsideDocsDir(c, new File(existingPath))) {
+            f = new File(existingPath).getCanonicalFile();
         } else {
             String safe = (suggested == null || suggested.trim().isEmpty() ? "제목 없음" : suggested.trim())
                     .replaceAll("[\\\\/:*?\"<>|]", "_");
@@ -145,21 +172,25 @@ final class OfficeCodec {
         return f.getAbsolutePath();
     }
 
-    static JSONObject readLocal(String path) throws Exception {
+    static JSONObject readLocal(Context c, String path) throws Exception {
+        if (path == null || path.isEmpty()) throw new SecurityException("Invalid path");
         File f = new File(path);
-        File sidecar = new File(path + ".owjson");
-        if (sidecar.exists()) {
+        if (!isInsideDocsDir(c, f)) throw new SecurityException("Access denied outside workspace_docs");
+        File canon = f.getCanonicalFile();
+        File sidecar = new File(canon.getAbsolutePath() + ".owjson");
+        if (sidecar.exists() && isInsideDocsDir(c, sidecar)) {
             try (FileInputStream fis = new FileInputStream(sidecar)) {
                 JSONObject doc = new JSONObject(new String(readAll(fis), StandardCharsets.UTF_8));
-                doc.put("path", f.getAbsolutePath());
-                doc.put("title", f.getName());
+                if (doc.has("html")) doc.put("html", sanitizeHtml(doc.optString("html", "")));
+                doc.put("path", canon.getAbsolutePath());
+                doc.put("title", canon.getName());
                 doc.put("imported", false);
                 return doc;
             }
         }
-        try (FileInputStream fis = new FileInputStream(f)) {
-            JSONObject doc = importStream(f.getName(), fis);
-            doc.put("path", f.getAbsolutePath());
+        try (FileInputStream fis = new FileInputStream(canon)) {
+            JSONObject doc = importStream(canon.getName(), fis);
+            doc.put("path", canon.getAbsolutePath());
             return doc;
         }
     }
@@ -170,11 +201,11 @@ final class OfficeCodec {
         String lower = name.toLowerCase(Locale.ROOT);
         JSONObject out;
         if (lower.endsWith(".docx")) {
-            out = new JSONObject().put("kind", "typing").put("html", importDocx(raw));
+            out = new JSONObject().put("kind", "typing").put("html", sanitizeHtml(importDocx(raw)));
         } else if (lower.endsWith(".hwpx")) {
-            out = new JSONObject().put("kind", "typing").put("html", importHwpx(raw));
+            out = new JSONObject().put("kind", "typing").put("html", sanitizeHtml(importHwpx(raw)));
         } else if (lower.endsWith(".hwp")) {
-            out = new JSONObject().put("kind", "typing").put("html", importHwpBinary(raw));
+            out = new JSONObject().put("kind", "typing").put("html", sanitizeHtml(importHwpBinary(raw)));
         } else if (lower.endsWith(".xlsx")) {
             out = importXlsx(raw);
         } else if (lower.endsWith(".csv")) {
@@ -449,10 +480,15 @@ final class OfficeCodec {
         return "[온디바이스 안내] 번역 모델이 연결되어 있지 않아 원문을 그대로 반환합니다.\n\n" + clean;
     }
 
+    private static final int MAX_IO_BYTES = 25 * 1024 * 1024;
+    private static final int MAX_ZIP_ENTRIES = 1000;
+
     private static byte[] readZipEntry(byte[] zipBytes, String name) throws Exception {
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
             ZipEntry e;
+            int entries = 0;
             while ((e = zis.getNextEntry()) != null) {
+                if (++entries > MAX_ZIP_ENTRIES) throw new IllegalStateException("ZIP 항목 수 제한 초과");
                 if (name.equalsIgnoreCase(e.getName())) return readAll(zis);
             }
         }
@@ -468,14 +504,24 @@ final class OfficeCodec {
     private static Document parseXml(byte[] xml) throws Exception {
         DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
         f.setNamespaceAware(true);
+        f.setExpandEntityReferences(false);
+        try { f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); } catch (Throwable ignored) {}
+        try { f.setFeature("http://xml.org/sax/features/external-general-entities", false); } catch (Throwable ignored) {}
+        try { f.setFeature("http://xml.org/sax/features/external-parameter-entities", false); } catch (Throwable ignored) {}
+        try { f.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false); } catch (Throwable ignored) {}
+        try { f.setXIncludeAware(false); } catch (Throwable ignored) {}
         return f.newDocumentBuilder().parse(new ByteArrayInputStream(xml));
     }
 
     static byte[] readAll(InputStream is) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buf = new byte[8192];
-        int n;
-        while ((n = is.read(buf)) > 0) bos.write(buf, 0, n);
+        int n, total = 0;
+        while ((n = is.read(buf)) > 0) {
+            total += n;
+            if (total > MAX_IO_BYTES) throw new IllegalStateException("파일 크기 제한(25MB) 초과");
+            bos.write(buf, 0, n);
+        }
         return bos.toByteArray();
     }
 
